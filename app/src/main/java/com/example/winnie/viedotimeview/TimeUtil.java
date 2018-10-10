@@ -15,12 +15,12 @@ public class TimeUtil {
      * @param timeValue 具体时间值
      * @return 格式化后的字符串，eg：3600 to 01:00
      */
-    public static String formatTimeHHmm(@IntRange(from = 0, to = MAX_TIME_VALUE) int timeValue) {
+    public static String formatTimeHHmm(@IntRange(from = 0, to = MAX_TIME_VALUE) long timeValue) {
         if (timeValue < 0){
             timeValue=0;
         }
-        int hour = timeValue / 3600;
-        int minute = timeValue % 3600 / 60;
+        long hour = timeValue / 3600;
+        long minute = timeValue % 3600 / 60;
         StringBuilder sb = new StringBuilder();
         if (hour < 10) {
             sb.append('0');
@@ -38,10 +38,10 @@ public class TimeUtil {
      * @param timeValue 具体时间值
      * @return 格式化后的字符串，eg：3600 to 01:00:00
      */
-    public static String formatTimeHHmmss(@IntRange(from = 0, to = MAX_TIME_VALUE) int timeValue) {
-        int hour = timeValue / 3600;
-        int minute = timeValue % 3600 / 60;
-        int second = timeValue % 3600 % 60;
+    public static String formatTimeHHmmss(@IntRange(from = 0, to = MAX_TIME_VALUE) long timeValue) {
+        long hour = timeValue / 3600;
+        long minute = timeValue % 3600 / 60;
+        long second = timeValue % 3600 % 60;
         StringBuilder sb = new StringBuilder();
 
         if (hour < 10) {

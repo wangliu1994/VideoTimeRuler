@@ -2,11 +2,18 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:divider="@drawable/split_bg"
+    android:showDividers = "middle|end|beginning|none"
     android:gravity="center">
 
-    <com.example.winnie.viedotimeview.TimeRulerView
-        android:id="@+id/time_ruler_view"
+    <com.example.winnie.viedotimeview.TimeRulerLayout
+        android:id="@+id/time_ruler_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <com.example.winnie.viedotimeview.CurrentTimeRulerLayout
+        android:id="@+id/current_time_ruler_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 </LinearLayout>
