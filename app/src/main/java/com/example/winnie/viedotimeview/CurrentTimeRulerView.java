@@ -517,15 +517,15 @@ public class CurrentTimeRulerView extends View {
         mPaint.setColor(gradationColor);
         mPaint.setStrokeWidth(gradationWidth);
 
-        final int perTextCount = mPerTextCounts[mPerTextCountIndex];
-        final long centerTime = mCurrentTime;
-        final float secondGap = mUnitGap / mUnitSecond;
         /**
-         * 绘制 中心右侧的尺子 刻度
+         * 绘制尺子刻度, 从min到max
          */
-        long start = 0;
-        float offset = mHalfWidth - mMoveDistance;
-        while (start <= MAX_TIME_VALUE) {
+        final float secondGap = mUnitGap / mUnitSecond;
+        //把mCurrentTime取整用于绘制
+        long centerTime = mCurrentTime - mCurrentTime /1000 % (60 * 60);
+        long start = mInitialTime + MIN_TIME_VALUE + mCurrentTime;
+        float offset = mHalfWidth - mMoveDistance + (MIN_TIME_VALUE * secondGap);
+        while (start <= mInitialTime + MAX_TIME_VALUE + mCurrentTime) {
             // 刻度
             if (start % 3600 == 0) {
                 // 时刻度
@@ -539,41 +539,14 @@ public class CurrentTimeRulerView extends View {
             }
 
             // 时间数值
-            if ((start + mInitialTime) % perTextCount == 0) {
-                String text = new SimpleDateFormat("HH:mm").format((start + mInitialTime) *1000);
+            final int perTextCount = mPerTextCounts[mPerTextCountIndex];
+            if ((start - mCurrentTime) % perTextCount == 0) {
+                String text = new SimpleDateFormat("HH:mm").format((start - mCurrentTime) *1000);
                 canvas.drawText(text, offset - mTextHalfWidth, - hourLen - gradationTextGap - gradationTextSize, mTextPaint);
             }
 
             start += mUnitSecond;
             offset += mUnitGap;
-        }
-
-        /**
-         * 绘制 中心左侧的尺子 刻度
-         */
-        start = centerTime;
-        offset = mHalfWidth - mMoveDistance;
-        while (start >= centerTime + MIN_TIME_VALUE) {
-            // 刻度
-            if (start % 3600 == 0) {
-                // 时刻度
-                canvas.drawLine(offset, 0 , offset, - hourLen, mPaint);
-            } else if (start % 60 == 0) {
-                // 分刻度
-                canvas.drawLine(offset, 0, offset, - minuteLen, mPaint);
-            } else{
-                // 秒刻度
-                canvas.drawLine(offset, 0, offset, - secondLen, mPaint);
-            }
-
-            // 时间数值
-            if ((start  - mCurrentTime + mInitialTime) % perTextCount == 0) {
-                String text = new SimpleDateFormat("HH:mm").format((start  - mCurrentTime + mInitialTime) *1000);
-                canvas.drawText(text, offset - mTextHalfWidth, - hourLen - gradationTextGap - gradationTextSize, mTextPaint);
-            }
-
-            start -= mUnitSecond;
-            offset -= mUnitGap;
         }
 
         canvas.restore();
@@ -639,11 +612,11 @@ public class CurrentTimeRulerView extends View {
 
     /**
      * 设置当前时间
-     * @param mCurrentTime 当前时间
+     * @param currentTime 当前时间
      */
-    public void setCurrentTime(long mCurrentTime) {
+    public void setCurrentTime(long currentTime) {
         //取currentTime最近的整点时间
-        long time = mCurrentTime /1000 - mCurrentTime /1000 % (60 * 60);
+        long time = currentTime /1000 - currentTime /1000 % (60 * 60);
         this.mCurrentTime = time;
         this.mMaxTime = time + MAX_TIME_VALUE;
         this.mMinTime = time + MIN_TIME_VALUE;
@@ -659,7 +632,7 @@ public class CurrentTimeRulerView extends View {
      * 获取当前时间
      * @return 当前时间毫秒数
      */
-    public long getmCurrentTime() {
+    public long getCurrentTime() {
         return mCurrentTime * 1000;
     }
 }
