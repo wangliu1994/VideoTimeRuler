@@ -521,7 +521,10 @@ public class TimeRulerView extends View {
         mPaint.setStrokeWidth(indicatorWidth);
         canvas.drawLine(mHalfWidth, 0, mHalfWidth, mHeight - partHeight, mPaint);
 
-        mPaint.setStyle(Paint.Style.STROKE);
+        //实心圆
+        mPaint.setStyle(Paint.Style.FILL);
+        mPaint.setColor(partColor);
+        canvas.drawCircle(mHalfWidth, mHeight - partHeight, partHeight, mPaint);
     }
 
     /**
@@ -534,8 +537,7 @@ public class TimeRulerView extends View {
         // 不用矩形，直接使用直线绘制
         mPaint.setStrokeWidth(partHeight);
         mPaint.setColor(partBgColor);
-        final float halfPartHeight = partHeight * 0.5f;
-        float partY = mHeight - halfPartHeight;
+        float partY = mHeight - partHeight;
         canvas.drawLine(0, partY, mWidth, partY, mPaint);
 
         mPaint.setColor(partColor);
