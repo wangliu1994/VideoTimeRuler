@@ -4,7 +4,6 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 
@@ -42,16 +41,16 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.start).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                currentTimeRulerLayout.startClip();
+                currentTimeRulerLayout.getTimeRuler().startClip();
             }
         });
 
         findViewById(R.id.stop).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                currentTimeRulerLayout.stopClip();
-                String sData1 = "开始时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(currentTimeRulerLayout.getClipStartTime());
-                String sData2 = " 结束时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(currentTimeRulerLayout.getClipEndTime());
+                currentTimeRulerLayout.getTimeRuler().stopClip();
+                String sData1 = "开始时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(currentTimeRulerLayout.getTimeRuler().getClipStartTime());
+                String sData2 = " 结束时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(currentTimeRulerLayout.getTimeRuler().getClipEndTime());
                 clipTimeView.setText(sData1 + sData2);
             }
         });

@@ -713,7 +713,7 @@ public class CurrentTimeRulerView extends View {
     }
 
     /**
-     * 开始裁剪
+     * 结束裁剪
      */
     public void stopClip() {
         if (mClipStartTime > mCurrentTime) {

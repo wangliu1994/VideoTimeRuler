@@ -71,6 +71,11 @@ public class CurrentTimeRulerLayout extends LinearLayout {
         return super.onTouchEvent(event);
     }
 
+
+    public CurrentTimeRulerView getTimeRuler() {
+        return mTrvTimeRuler;
+    }
+
     private OnTimeChangeListener mOnTimeChangeListener;
     /**
      * 设置时间变化监听事件
@@ -86,37 +91,5 @@ public class CurrentTimeRulerLayout extends LinearLayout {
          * @param newTime 单位，毫秒
          */
         void onTimeChanged(long newTime);
-    }
-
-    /**
-     * 开始裁剪
-     */
-    public void startClip(){
-        if(mTrvTimeRuler != null){
-            mTrvTimeRuler.startClip();
-        }
-    }
-
-    /**
-     * 开始裁剪
-     */
-    public void stopClip(){
-        if(mTrvTimeRuler != null){
-            mTrvTimeRuler.stopClip();
-        }
-    }
-
-    public long getClipStartTime() {
-        if(mTrvTimeRuler != null){
-            return mTrvTimeRuler.getClipStartTime();
-        }
-        return 0;
-    }
-
-    public long getClipEndTime() {
-        if(mTrvTimeRuler != null){
-            return mTrvTimeRuler.getClipEndTime();
-        }
-        return 0;
     }
 }
