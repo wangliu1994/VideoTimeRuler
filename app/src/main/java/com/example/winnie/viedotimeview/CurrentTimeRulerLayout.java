@@ -87,4 +87,36 @@ public class CurrentTimeRulerLayout extends LinearLayout {
          */
         void onTimeChanged(long newTime);
     }
+
+    /**
+     * 开始裁剪
+     */
+    public void startClip(){
+        if(mTrvTimeRuler != null){
+            mTrvTimeRuler.startClip();
+        }
+    }
+
+    /**
+     * 开始裁剪
+     */
+    public void stopClip(){
+        if(mTrvTimeRuler != null){
+            mTrvTimeRuler.stopClip();
+        }
+    }
+
+    public long getClipStartTime() {
+        if(mTrvTimeRuler != null){
+            return mTrvTimeRuler.getClipStartTime();
+        }
+        return 0;
+    }
+
+    public long getClipEndTime() {
+        if(mTrvTimeRuler != null){
+            return mTrvTimeRuler.getClipEndTime();
+        }
+        return 0;
+    }
 }

@@ -5,6 +5,7 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.CountDownTimer;
 import android.support.annotation.Nullable;
 import android.text.TextPaint;
 import android.util.AttributeSet;
@@ -19,14 +20,22 @@ import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.List;
 
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Scheduler;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
+
 /**
- *  - 参考：https://github.com/zjun615/RulerView
- *
- *  - 时间缩放，采用缩放手势检测器 ScaleGestureDetector
- *  - 缩放的等级估算方式：进入默认比例为1，根据每隔所占的秒数与宽度，可估算出每个等级的宽度范围，再与默认等级对应的宽度相除，即可算出缩放比例
- *  - 惯性滑动，使用速度追踪器 VelocityTracker
- *  - 缩放与滑动之间的连续操作，ScaleGestureDetector 开始与结束的条件是第二个手指按下与松开，
- *  - 所以onTouchEvent()中应该使用 getActionMasked()来监听第二个手指的 DOWN(ACTION_POINTER_DOWN) 与 UP(ACTION_POINTER_UP) 事件，MOVE 都是一样的
+ * - 参考：https://github.com/zjun615/RulerView
+ * <p>
+ * - 时间缩放，采用缩放手势检测器 ScaleGestureDetector
+ * - 缩放的等级估算方式：进入默认比例为1，根据每隔所占的秒数与宽度，可估算出每个等级的宽度范围，再与默认等级对应的宽度相除，即可算出缩放比例
+ * - 惯性滑动，使用速度追踪器 VelocityTracker
+ * - 缩放与滑动之间的连续操作，ScaleGestureDetector 开始与结束的条件是第二个手指按下与松开，
+ * - 所以onTouchEvent()中应该使用 getActionMasked()来监听第二个手指的 DOWN(ACTION_POINTER_DOWN) 与 UP(ACTION_POINTER_UP) 事件，MOVE 都是一样的
  *
  * @author : winnie
  * @date : 2018/10/9
@@ -95,9 +104,9 @@ public class CurrentTimeRulerView extends View {
      * 与 {@link #mPerTextCounts} 和 {@link #mPerCountScaleThresholds} 对应的索引值
      */
     private static int[] mUnitSeconds = {
-            10,     10,     10,     10,
-            60,     60,
-            5*60,   5*60,
+            10, 10, 10, 10,
+            60, 60,
+            5 * 60, 5 * 60,
             15 * 60, 15 * 60, 15 * 60, 15 * 60, 15 * 60, 15 * 60
     };
 
@@ -106,10 +115,10 @@ public class CurrentTimeRulerView extends View {
      */
     @SuppressWarnings("all")
     private static int[] mPerTextCounts = {
-            60,         60,         2 * 60,     4 * 60, // 10s/unit: 最大值, 1min, 2min, 4min
-            5 * 60,     10 * 60, // 1min/unit: 5min, 10min
-            20 * 60,    30 * 60, // 5min/unit: 20min, 30min
-            3600,       2 * 3600,   3 * 3600,   4 * 3600,   5 * 3600,   6 * 3600 // 15min/unit
+            60, 60, 2 * 60, 4 * 60, // 10s/unit: 最大值, 1min, 2min, 4min
+            5 * 60, 10 * 60, // 1min/unit: 5min, 10min
+            20 * 60, 30 * 60, // 5min/unit: 20min, 30min
+            3600, 2 * 3600, 3 * 3600, 4 * 3600, 5 * 3600, 6 * 3600 // 15min/unit
     };
     /**
      * 与 {@link #mPerTextCounts} 对应的阈值，在此阈值与前一个阈值之间，则使用此阈值对应的间隔数值
@@ -117,10 +126,10 @@ public class CurrentTimeRulerView extends View {
      */
     @SuppressWarnings("all")
     private float[] mPerCountScaleThresholds = {
-            6f,     3.6f,   1.8f,   1.5f, // 10s/unit: 最大值, 1min, 2min, 4min
-            0.8f,     0.4f,   // 1min/unit: 5min, 10min
-            0.25f,  0.125f, // 5min/unit: 20min, 30min
-            0.07f,  0.04f,  0.03f,  0.025f, 0.02f,  0.015f // 15min/unit: 1h, 2h, 3h, 4h, 5h, 6h
+            6f, 3.6f, 1.8f, 1.5f, // 10s/unit: 最大值, 1min, 2min, 4min
+            0.8f, 0.4f,   // 1min/unit: 5min, 10min
+            0.25f, 0.125f, // 5min/unit: 20min, 30min
+            0.07f, 0.04f, 0.03f, 0.025f, 0.02f, 0.015f // 15min/unit: 1h, 2h, 3h, 4h, 5h, 6h
     };
     /**
      * 默认mScale为1
@@ -158,6 +167,17 @@ public class CurrentTimeRulerView extends View {
     private long mCurrentTime;
     private long mMaxTime;
     private long mMinTime;
+
+    /**
+     * 裁剪开始时间
+     */
+    private long mClipStartTime;
+    /**
+     * 裁剪结束时间
+     */
+    private long mClipEndTime;
+
+
     /**
      * 初始化时的基准时间，作为时间原点
      */
@@ -189,7 +209,7 @@ public class CurrentTimeRulerView extends View {
     /**
      * 时间片段
      */
-    public static class TimePart{
+    public static class TimePart {
         /**
          * 时间段开始时间戳，单位：秒
          */
@@ -205,11 +225,11 @@ public class CurrentTimeRulerView extends View {
         }
 
         /**
-         * @param currentTime 基准时间 单位：毫秒
+         * @param currentTime     基准时间 单位：毫秒
          * @param startTimeOffset 基准时间差值  单位：毫秒
          */
         public void setStartTime(long currentTime, long startTimeOffset) {
-            this.startTime = currentTime /1000 + startTimeOffset/1000;
+            this.startTime = currentTime / 1000 + startTimeOffset / 1000;
         }
 
         public long getEndTime() {
@@ -220,13 +240,14 @@ public class CurrentTimeRulerView extends View {
          * @param endTimeOffset 与开始时间的差值 单位：毫秒
          */
         public void setEndTime(long endTimeOffset) {
-            this.endTime = startTime + endTimeOffset/1000;
+            this.endTime = startTime + endTimeOffset / 1000;
         }
     }
 
-    public interface OnTimeChangeListener{
+    public interface OnTimeChangeListener {
         /**
          * 时间发生变化
+         *
          * @param newTime 单位，毫秒
          */
         void onTimeChanged(long newTime);
@@ -261,7 +282,7 @@ public class CurrentTimeRulerView extends View {
         TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.TimeRulerView);
         bgColor = ta.getColor(R.styleable.TimeRulerView_bgColor, Color.parseColor("#F4F4F4"));
         gradationColor = ta.getColor(R.styleable.TimeRulerView_gradationColor, Color.parseColor("#333333"));
-        partHeight = ta.getDimension(R.styleable.TimeRulerView_partHeight, PxUtil.dp2px(context,5));
+        partHeight = ta.getDimension(R.styleable.TimeRulerView_partHeight, PxUtil.dp2px(context, 5));
         partColor = ta.getColor(R.styleable.TimeRulerView_partColor, Color.parseColor("#605FBC"));
         partBgColor = ta.getColor(R.styleable.TimeRulerView_partBgColor, Color.parseColor("#C4C4C4"));
         partGradationGap = ta.getDimension(R.styleable.TimeRulerView_partGradationGap, PxUtil.dp2px(getContext(), 5));
@@ -270,14 +291,14 @@ public class CurrentTimeRulerView extends View {
         minuteLen = ta.getDimension(R.styleable.TimeRulerView_minuteLen, PxUtil.dp2px(context, 5));
         hourLen = ta.getDimension(R.styleable.TimeRulerView_hourLen, PxUtil.dp2px(context, 8));
         gradationTextColor = ta.getColor(R.styleable.TimeRulerView_gradationTextColor, Color.parseColor("#333333"));
-        gradationTextSize = ta.getDimension(R.styleable.TimeRulerView_gradationTextSize, PxUtil.dp2px(context,10));
-        gradationTextGap = ta.getDimension(R.styleable.TimeRulerView_gradationTextGap, PxUtil.dp2px(context,4));
-        indicatorWidth = ta.getDimension(R.styleable.TimeRulerView_indicatorLineWidth, PxUtil.dp2px(context,1));
+        gradationTextSize = ta.getDimension(R.styleable.TimeRulerView_gradationTextSize, PxUtil.dp2px(context, 10));
+        gradationTextGap = ta.getDimension(R.styleable.TimeRulerView_gradationTextGap, PxUtil.dp2px(context, 4));
+        indicatorWidth = ta.getDimension(R.styleable.TimeRulerView_indicatorLineWidth, PxUtil.dp2px(context, 1));
         indicatorColor = ta.getColor(R.styleable.TimeRulerView_indicatorLineColor, Color.parseColor("#FAD500"));
         ta.recycle();
     }
 
-    private void initScaleGesture(Context context){
+    private void initScaleGesture(Context context) {
         mScaleGestureDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.OnScaleGestureListener() {
             /**
              * 缩放被触发(会调用0次或者多次)，
@@ -287,15 +308,15 @@ public class CurrentTimeRulerView extends View {
             @Override
             public boolean onScale(ScaleGestureDetector detector) {
                 float scaleFactor = detector.getScaleFactor();
-                LogUtil.logD(TAG,"onScale...focusX=%f, focusY=%f, scaleFactor=%f",
+                LogUtil.logD(TAG, "onScale...focusX=%f, focusY=%f, scaleFactor=%f",
                         detector.getFocusX(), detector.getFocusY(), scaleFactor);
 
                 float maxScale = mPerCountScaleThresholds[0];
-                float minScale = mPerCountScaleThresholds[mPerCountScaleThresholds.length -1];
-                if(scaleFactor > 1 && mScale >= maxScale){
+                float minScale = mPerCountScaleThresholds[mPerCountScaleThresholds.length - 1];
+                if (scaleFactor > 1 && mScale >= maxScale) {
                     //已经放到至最大值
                     return true;
-                }else if(scaleFactor < 1 && mScale <= minScale){
+                } else if (scaleFactor < 1 && mScale <= minScale) {
                     //已经缩小至最小值
                 }
 
@@ -305,7 +326,7 @@ public class CurrentTimeRulerView extends View {
 
                 mUnitSecond = mUnitSeconds[mPerTextCountIndex];
                 mUnitGap = mScale * mOneSecondGap * mUnitSecond;
-                LogUtil.logD(TAG,"onScale: mScale=%f, mPerTextCountIndex=%d, mUnitSecond=%d, mUnitGap=%f",
+                LogUtil.logD(TAG, "onScale: mScale=%f, mPerTextCountIndex=%d, mUnitSecond=%d, mUnitGap=%f",
                         mScale, mPerTextCountIndex, mUnitSecond, mUnitGap);
 
                 mMoveDistance = (mCurrentTime - mInitialTime) / mUnitSecond * mUnitGap;
@@ -385,7 +406,7 @@ public class CurrentTimeRulerView extends View {
         mHeight = MeasureSpec.getSize(heightMeasureSpec);
 
         // 处理wrap_content的高度，设置为60dp
-        if(MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.AT_MOST){
+        if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.AT_MOST) {
             mHeight = PxUtil.dp2px(getContext(), 60);
         }
 
@@ -402,7 +423,7 @@ public class CurrentTimeRulerView extends View {
         final int actionMasked = event.getActionMasked();
         final int action = event.getAction();
         final int pointerCount = event.getPointerCount();
-        LogUtil.logD(TAG,"onTouchEvent: isScaling=%b, actionIndex=%d, pointerId=%d, actionMasked=%d, action=%d, pointerCount=%d",
+        LogUtil.logD(TAG, "onTouchEvent: isScaling=%b, actionIndex=%d, pointerId=%d, actionMasked=%d, action=%d, pointerCount=%d",
                 isScaling, actionIndex, pointerId, actionMasked, action, pointerCount);
         final int x = (int) event.getX();
         final int y = (int) event.getY();
@@ -462,7 +483,8 @@ public class CurrentTimeRulerView extends View {
                 int restIndex = actionIndex == 0 ? 1 : 0;
                 mInitialX = (int) event.getX(restIndex);
                 break;
-            default: break;
+            default:
+                break;
         }
         mLastX = x;
         mLastY = y;
@@ -495,6 +517,9 @@ public class CurrentTimeRulerView extends View {
         // 时间段
         drawTimeParts(canvas);
 
+        //裁剪时间段
+        drawClipPart(canvas);
+
         // 当前时间指针
         drawTimeIndicator(canvas);
     }
@@ -524,6 +549,7 @@ public class CurrentTimeRulerView extends View {
 
         long dxTime = mCurrentTime - mInitialTime;
         long centerTime = dxTime - dxTime % (60 * 60);
+//        long centerTime = dxTime;
         //绘制centerTime左右两边24小时的尺子刻度
         long start = centerTime + MIN_TIME_VALUE;
 
@@ -532,20 +558,20 @@ public class CurrentTimeRulerView extends View {
             // 刻度
             if (start % 3600 == 0) {
                 // 时刻度
-                canvas.drawLine(offset, 0 , offset, - hourLen, mPaint);
+                canvas.drawLine(offset, 0, offset, -hourLen, mPaint);
             } else if (start % 60 == 0) {
                 // 分刻度
-                canvas.drawLine(offset, 0, offset, - minuteLen, mPaint);
-            } else{
+                canvas.drawLine(offset, 0, offset, -minuteLen, mPaint);
+            } else {
                 // 秒刻度
-                canvas.drawLine(offset, 0, offset, - secondLen, mPaint);
+                canvas.drawLine(offset, 0, offset, -secondLen, mPaint);
             }
 
             // 时间数值
             final int perTextCount = mPerTextCounts[mPerTextCountIndex];
             if ((start + mInitialTime) % perTextCount == 0) {
-                String text = new SimpleDateFormat("HH:mm").format((start + mInitialTime) *1000);
-                canvas.drawText(text, offset - mTextHalfWidth, - hourLen - gradationTextGap - gradationTextSize, mTextPaint);
+                String text = new SimpleDateFormat("HH:mm").format((start + mInitialTime) * 1000);
+                canvas.drawText(text, offset - mTextHalfWidth, -hourLen - gradationTextGap - gradationTextSize, mTextPaint);
             }
 
             start += mUnitSecond;
@@ -559,15 +585,44 @@ public class CurrentTimeRulerView extends View {
      * 绘制当前时间指针
      */
     private void drawTimeIndicator(Canvas canvas) {
+        final float secondGap = mUnitGap / mUnitSecond;
+        float startX = mHalfWidth - mMoveDistance + (mCurrentTime - mInitialTime) * secondGap;
+
         // 指针
         mPaint.setColor(indicatorColor);
         mPaint.setStrokeWidth(indicatorWidth);
-        canvas.drawLine(mHalfWidth, 0, mHalfWidth, mHeight - partHeight, mPaint);
+        canvas.drawLine(startX, 0, startX, mHeight - partHeight, mPaint);
 
         //实心圆
         mPaint.setStyle(Paint.Style.FILL);
         mPaint.setColor(partColor);
-        canvas.drawCircle(mHalfWidth, mHeight - partHeight, partHeight, mPaint);
+        canvas.drawCircle(startX, mHeight - partHeight, partHeight, mPaint);
+    }
+
+    /**
+     * 绘制裁剪时间轴部分
+     *
+     * @param canvas
+     */
+    public void drawClipPart(Canvas canvas) {
+        //mClipStartTime>0表示开始裁剪了
+        //mClipEndTime<=0表示裁剪还没有结束
+        if (mClipStartTime > 0 && mClipEndTime <= 0) {
+            // 裁剪开始指针
+            mPaint.setColor(Color.parseColor("#e28a8a"));
+            mPaint.setStrokeWidth(indicatorWidth);
+            final float secondGap = mUnitGap / mUnitSecond;
+            //只绘制区间内的裁剪时间段
+            long startTime = Math.min(Math.max(mClipStartTime, mMinTime), mMaxTime);
+            long endTime = Math.min(Math.max(mClipEndTime, mMinTime), mMaxTime);
+            float startX = mHalfWidth - mMoveDistance + (startTime - mInitialTime) * secondGap;
+            float endX = mHalfWidth - mMoveDistance + (mCurrentTime - mInitialTime) * secondGap;
+            canvas.drawLine(startX, 0, startX, mHeight - partHeight, mPaint);
+
+            mPaint.setStrokeWidth(partHeight);
+            float partY = mHeight - partHeight;
+            canvas.drawLine(startX, partY, endX, partY, mPaint);
+        }
     }
 
     /**
@@ -588,16 +643,19 @@ public class CurrentTimeRulerView extends View {
         final float secondGap = mUnitGap / mUnitSecond;
         for (int i = 0, size = mTimePartList.size(); i < size; i++) {
             TimePart timePart = mTimePartList.get(i);
-            startX = mHalfWidth - mMoveDistance + (timePart.getStartTime() - mInitialTime) * secondGap;
-            endX = mHalfWidth - mMoveDistance + (timePart.getEndTime() - mInitialTime) * secondGap;
+            //只绘制区间内的时间段
+            long startTime = Math.min(Math.max(timePart.getStartTime(), mMinTime), mMaxTime);
+            long endTime = Math.min(Math.max(timePart.getEndTime(), mMinTime), mMaxTime);
+            startX = mHalfWidth - mMoveDistance + (startTime - mInitialTime) * secondGap;
+            endX = mHalfWidth - mMoveDistance + (endTime - mInitialTime) * secondGap;
             canvas.drawLine(startX, partY, endX, partY, mPaint);
         }
     }
 
 
-
     /**
      * 设置时间变化监听事件
+     *
      * @param onTimeChangeListener 监听回调
      */
     public void setOnTimeChangedListener(OnTimeChangeListener onTimeChangeListener) {
@@ -606,6 +664,7 @@ public class CurrentTimeRulerView extends View {
 
     /**
      * 设置时间块（段）集合
+     *
      * @param timePartList 时间块集合
      */
     public void setTimePartList(List<TimePart> timePartList) {
@@ -615,27 +674,88 @@ public class CurrentTimeRulerView extends View {
 
     /**
      * 设置当前时间
+     *
      * @param currentTime 当前时间
      */
     public void setCurrentTime(long currentTime) {
         //取currentTime最近的整点时间
-        long time = currentTime /1000 - currentTime /1000 % (60 * 60);
+        long time = currentTime / 1000 - currentTime / 1000 % (60 * 60);
         this.mCurrentTime = time;
         this.mMaxTime = time + MAX_TIME_VALUE;
         this.mMinTime = time + MIN_TIME_VALUE;
         this.mInitialTime = time;
-        if(mOnTimeChangeListener != null){
+        if (mOnTimeChangeListener != null) {
             mOnTimeChangeListener.onTimeChanged(mInitialTime * 1000);
         }
         calculateDistance();
         postInvalidate();
+        run();
     }
 
     /**
      * 获取当前时间
+     *
      * @return 当前时间毫秒数
      */
     public long getCurrentTime() {
         return mCurrentTime * 1000;
+    }
+
+    /**
+     * 开始裁剪
+     */
+    public void startClip() {
+        this.mClipStartTime = mCurrentTime;
+        this.mClipEndTime = 0;
+        postInvalidate();
+    }
+
+    /**
+     * 开始裁剪
+     */
+    public void stopClip() {
+        if (mClipStartTime > mCurrentTime) {
+            //处理结束时间小于开始时间的情况
+            this.mClipEndTime = mClipStartTime;
+            this.mClipStartTime = mCurrentTime;
+        } else {
+            this.mClipEndTime = mCurrentTime;
+        }
+        postInvalidate();
+    }
+
+    public long getClipStartTime() {
+        return mClipStartTime * 1000;
+    }
+
+    public long getClipEndTime() {
+        return mClipEndTime * 1000;
+    }
+
+    private void run() {
+        Observable.create(new ObservableOnSubscribe<Long>() {
+            @Override
+            public void subscribe(ObservableEmitter<Long> emitter) throws Exception {
+                while (true) {
+                    if(isMoving || isScaling){
+                        continue;
+                    }
+                    Thread.sleep(1000);
+                    emitter.onNext(1L);
+                }
+            }
+        }).subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<Long>() {
+                    @Override
+                    public void accept(Long aLong) throws Exception {
+                        mCurrentTime = mCurrentTime + aLong;
+                        calculateDistance();
+                        if (mOnTimeChangeListener != null) {
+                            mOnTimeChangeListener.onTimeChanged(mCurrentTime * 1000);
+                        }
+                        postInvalidate();
+                    }
+                });
     }
 }
