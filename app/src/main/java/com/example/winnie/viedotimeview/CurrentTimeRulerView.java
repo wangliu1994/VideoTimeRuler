@@ -5,7 +5,6 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.os.CountDownTimer;
 import android.support.annotation.Nullable;
 import android.text.TextPaint;
 import android.util.AttributeSet;
@@ -23,7 +22,6 @@ import java.util.List;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
-import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
@@ -329,7 +327,7 @@ public class CurrentTimeRulerView extends View {
                 LogUtil.logD(TAG, "onScale: mScale=%f, mPerTextCountIndex=%d, mUnitSecond=%d, mUnitGap=%f",
                         mScale, mPerTextCountIndex, mUnitSecond, mUnitGap);
 
-                mMoveDistance = (mCurrentTime - mInitialTime) / mUnitSecond * mUnitGap;
+                mMoveDistance = (mCurrentTime - mInitialTime) / (float)mUnitSecond * mUnitGap;
                 invalidate();
                 return true;
             }
@@ -361,7 +359,7 @@ public class CurrentTimeRulerView extends View {
     }
 
     private void calculateDistance() {
-        mMoveDistance = (mCurrentTime - mInitialTime) / mUnitSecond * mUnitGap;
+        mMoveDistance = (mCurrentTime - mInitialTime) / (float)mUnitSecond * mUnitGap ;
     }
 
     private void init(Context context) {
@@ -471,8 +469,8 @@ public class CurrentTimeRulerView extends View {
                 final int xVelocity = (int) mVelocityTracker.getXVelocity();
                 if (Math.abs(xVelocity) >= MIN_VELOCITY) {
                     // 惯性滑动,阈值是向左向右24小时
-                    final int maxDistance = (int) (MAX_TIME_VALUE / mUnitGap * mUnitGap);
-                    final int minDistance = (int) (MIN_TIME_VALUE / mUnitGap * mUnitGap);
+                    final int maxDistance = (int) (MAX_TIME_VALUE / (float)mUnitSecond * mUnitGap);
+                    final int minDistance = (int) (MIN_TIME_VALUE / (float)mUnitSecond * mUnitGap);
                     mScroller.fling((int) mMoveDistance, 0, -xVelocity, 0, minDistance, maxDistance, 0, 0);
                     invalidate();
                 }
@@ -492,9 +490,9 @@ public class CurrentTimeRulerView extends View {
     }
 
     private void computeTime() {
-        // 不用转float，肯定能整除
-        float maxDistance = (mMaxTime - mInitialTime) / mUnitSecond * mUnitGap;
-        float minDistance = (mMinTime - mInitialTime) / mUnitSecond * mUnitGap;
+        // 转float，不肯定能整除
+        float maxDistance = (mMaxTime - mInitialTime) / (float)mUnitSecond  * mUnitGap;
+        float minDistance = (mMinTime - mInitialTime) / (float)mUnitSecond  * mUnitGap;
         // 限定范围
         mMoveDistance = Math.min(maxDistance, Math.max(minDistance, mMoveDistance));
         mCurrentTime = mInitialTime + (int) (mMoveDistance / mUnitGap * mUnitSecond);
@@ -529,6 +527,8 @@ public class CurrentTimeRulerView extends View {
         if (mScroller.computeScrollOffset()) {
             mMoveDistance = mScroller.getCurrX();
             computeTime();
+        }else {
+            isMoving = false;
         }
     }
 
@@ -545,37 +545,43 @@ public class CurrentTimeRulerView extends View {
         /**
          * 绘制尺子刻度, 从min到max
          */
-        final float secondGap = mUnitGap / mUnitSecond;
+        final float secondGap = mUnitGap / (float)mUnitSecond ;
+        final int perTextCount = mPerTextCounts[mPerTextCountIndex];
 
-        long dxTime = mCurrentTime - mInitialTime;
-        long centerTime = dxTime - dxTime % (60 * 60);
-//        long centerTime = dxTime;
-        //绘制centerTime左右两边24小时的尺子刻度
+        /**
+         * mCurrentTime与其最邻近的左边刻度尺的时间差值
+         */
+        long dxTime = mCurrentTime% perTextCount;
+        long centerTime = mCurrentTime - mInitialTime - dxTime;
+
+        /**
+         * 绘制centerTime左右两边24小时的尺子刻度
+         */
         long start = centerTime + MIN_TIME_VALUE;
+        float startX = mHalfWidth - mMoveDistance + start * secondGap;
 
-        float offset = mHalfWidth - mMoveDistance + start * secondGap;
         while (start <= centerTime + MAX_TIME_VALUE) {
+            long timeTemp = start + mInitialTime;
             // 刻度
-            if (start % 3600 == 0) {
+            if (timeTemp % 3600 == 0) {
                 // 时刻度
-                canvas.drawLine(offset, 0, offset, -hourLen, mPaint);
-            } else if (start % 60 == 0) {
+                canvas.drawLine(startX, 0, startX, -hourLen, mPaint);
+            } else if (timeTemp % 60 == 0) {
                 // 分刻度
-                canvas.drawLine(offset, 0, offset, -minuteLen, mPaint);
+                canvas.drawLine(startX, 0, startX, -minuteLen, mPaint);
             } else {
                 // 秒刻度
-                canvas.drawLine(offset, 0, offset, -secondLen, mPaint);
+                canvas.drawLine(startX, 0, startX, -secondLen, mPaint);
             }
 
             // 时间数值
-            final int perTextCount = mPerTextCounts[mPerTextCountIndex];
-            if ((start + mInitialTime) % perTextCount == 0) {
-                String text = new SimpleDateFormat("HH:mm").format((start + mInitialTime) * 1000);
-                canvas.drawText(text, offset - mTextHalfWidth, -hourLen - gradationTextGap - gradationTextSize, mTextPaint);
+            if (timeTemp % perTextCount == 0) {
+                String text = new SimpleDateFormat("HH:mm:ss").format(timeTemp * 1000);
+                canvas.drawText(text, startX - mTextHalfWidth, -hourLen - gradationTextGap - gradationTextSize, mTextPaint);
             }
 
             start += mUnitSecond;
-            offset += mUnitGap;
+            startX += mUnitGap;
         }
 
         canvas.restore();
@@ -585,18 +591,15 @@ public class CurrentTimeRulerView extends View {
      * 绘制当前时间指针
      */
     private void drawTimeIndicator(Canvas canvas) {
-        final float secondGap = mUnitGap / mUnitSecond;
-        float startX = mHalfWidth - mMoveDistance + (mCurrentTime - mInitialTime) * secondGap;
-
         // 指针
         mPaint.setColor(indicatorColor);
         mPaint.setStrokeWidth(indicatorWidth);
-        canvas.drawLine(startX, 0, startX, mHeight - partHeight, mPaint);
+        canvas.drawLine(mHalfWidth, 0, mHalfWidth, mHeight - partHeight, mPaint);
 
         //实心圆
         mPaint.setStyle(Paint.Style.FILL);
         mPaint.setColor(partColor);
-        canvas.drawCircle(startX, mHeight - partHeight, partHeight, mPaint);
+        canvas.drawCircle(mHalfWidth, mHeight - partHeight, partHeight, mPaint);
     }
 
     /**
@@ -611,10 +614,9 @@ public class CurrentTimeRulerView extends View {
             // 裁剪开始指针
             mPaint.setColor(Color.parseColor("#e28a8a"));
             mPaint.setStrokeWidth(indicatorWidth);
-            final float secondGap = mUnitGap / mUnitSecond;
+            final float secondGap = mUnitGap / (float)mUnitSecond ;
             //只绘制区间内的裁剪时间段
             long startTime = Math.min(Math.max(mClipStartTime, mMinTime), mMaxTime);
-            long endTime = Math.min(Math.max(mClipEndTime, mMinTime), mMaxTime);
             float startX = mHalfWidth - mMoveDistance + (startTime - mInitialTime) * secondGap;
             float endX = mHalfWidth - mMoveDistance + (mCurrentTime - mInitialTime) * secondGap;
             canvas.drawLine(startX, 0, startX, mHeight - partHeight, mPaint);
@@ -640,7 +642,7 @@ public class CurrentTimeRulerView extends View {
 
         mPaint.setColor(partColor);
         float startX, endX;
-        final float secondGap = mUnitGap / mUnitSecond;
+        final float secondGap = mUnitGap / (float)mUnitSecond ;
         for (int i = 0, size = mTimePartList.size(); i < size; i++) {
             TimePart timePart = mTimePartList.get(i);
             //只绘制区间内的时间段
@@ -679,7 +681,7 @@ public class CurrentTimeRulerView extends View {
      */
     public void setCurrentTime(long currentTime) {
         //取currentTime最近的整点时间
-        long time = currentTime / 1000 - currentTime / 1000 % (60 * 60);
+        long time = currentTime / 1000;
         this.mCurrentTime = time;
         this.mMaxTime = time + MAX_TIME_VALUE;
         this.mMinTime = time + MIN_TIME_VALUE;
@@ -689,7 +691,7 @@ public class CurrentTimeRulerView extends View {
         }
         calculateDistance();
         postInvalidate();
-        run();
+        startRun();
     }
 
     /**
@@ -732,7 +734,7 @@ public class CurrentTimeRulerView extends View {
         return mClipEndTime * 1000;
     }
 
-    private void run() {
+    private void startRun() {
         Observable.create(new ObservableOnSubscribe<Long>() {
             @Override
             public void subscribe(ObservableEmitter<Long> emitter) throws Exception {
