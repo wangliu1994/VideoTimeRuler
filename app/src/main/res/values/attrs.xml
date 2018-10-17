@@ -4,28 +4,32 @@
     <declare-styleable name="TimeRulerView">
         <!--背景色-->
         <attr name="bgColor" format="reference|color" />
-        <!--刻度颜色-->
-        <attr name="gradationColor" format="reference|color" />
         <!--时间块的高度-->
         <attr name="partHeight" format="dimension|reference" />
         <!--时间块的颜色-->
         <attr name="partColor" format="color|reference" />
         <!--时间块的背景色-->
         <attr name="partBgColor" format="color|reference" />
+        <!--裁剪时间块背景色-->
+        <attr name="clipColor" format="color|reference" />
+        <!--裁剪时间指针颜色-->
+        <attr name="clipIndicatorColor" format="color|reference" />
         <!--时间块与时刻度的距离-->
         <attr name="partGradationGap" format="dimension|reference" />
+        <!--刻度颜色-->
+        <attr name="gradationColor" format="reference|color" />
         <!--刻度宽度-->
         <attr name="gradationWidth" format="dimension|reference" />
+        <!--刻度数值颜色-->
+        <attr name="gradationTextColor" format="color|reference" />
+        <!--刻度数值大小-->
+        <attr name="gradationTextSize" format="dimension|reference" />
         <!--秒刻度的长度-->
         <attr name="secondLen" format="dimension|reference" />
         <!--分刻度的长度-->
         <attr name="minuteLen" format="dimension|reference" />
         <!--时刻度的长度-->
         <attr name="hourLen" format="dimension|reference" />
-        <!--刻度数值颜色-->
-        <attr name="gradationTextColor" format="color|reference" />
-        <!--刻度数值大小-->
-        <attr name="gradationTextSize" format="dimension|reference" />
         <!--刻度数值与时刻度的距离-->
         <attr name="gradationTextGap" format="dimension|reference" />
         <!--当前时间，单位：s-->

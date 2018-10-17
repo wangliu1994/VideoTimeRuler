@@ -64,9 +64,17 @@ public class CurrentTimeRulerView extends View {
      */
     private int partColor;
     /**
-     * 时间快背景色
+     * 时间块背景色
      */
     private int partBgColor;
+    /**
+     * 裁剪时间块的颜色
+     */
+    private int clipColor;
+    /**
+     * 裁剪时间指针颜色
+     */
+    private int clipIndicatorColor;
     /**
      * 时间快与刻度之间的距离
      */
@@ -283,6 +291,8 @@ public class CurrentTimeRulerView extends View {
         partHeight = ta.getDimension(R.styleable.TimeRulerView_partHeight, PxUtil.dp2px(context, 5));
         partColor = ta.getColor(R.styleable.TimeRulerView_partColor, Color.parseColor("#605FBC"));
         partBgColor = ta.getColor(R.styleable.TimeRulerView_partBgColor, Color.parseColor("#C4C4C4"));
+        clipColor = ta.getColor(R.styleable.TimeRulerView_clipColor, Color.parseColor("#E28A8A"));
+        clipIndicatorColor = ta.getColor(R.styleable.TimeRulerView_clipIndicatorColor, Color.parseColor("#FF5150"));
         partGradationGap = ta.getDimension(R.styleable.TimeRulerView_partGradationGap, PxUtil.dp2px(getContext(), 5));
         gradationWidth = ta.getDimension(R.styleable.TimeRulerView_gradationWidth, PxUtil.dp2px(context, 1));
         secondLen = ta.getDimension(R.styleable.TimeRulerView_secondLen, PxUtil.dp2px(context, 3));
@@ -542,21 +552,15 @@ public class CurrentTimeRulerView extends View {
         mPaint.setColor(gradationColor);
         mPaint.setStrokeWidth(gradationWidth);
 
-        /**
-         * 绘制尺子刻度, 从min到max
-         */
+        //绘制尺子刻度, 从min到max
         final float secondGap = mUnitGap / (float)mUnitSecond ;
         final int perTextCount = mPerTextCounts[mPerTextCountIndex];
 
-        /**
-         * mCurrentTime与其最邻近的左边刻度尺的时间差值
-         */
+        //mCurrentTime与其最邻近的左边刻度尺的时间差值
         long dxTime = mCurrentTime% perTextCount;
         long centerTime = mCurrentTime - mInitialTime - dxTime;
 
-        /**
-         * 绘制centerTime左右两边24小时的尺子刻度
-         */
+        //绘制centerTime左右两边24小时的尺子刻度
         long start = centerTime + MIN_TIME_VALUE;
         float startX = mHalfWidth - mMoveDistance + start * secondGap;
 
@@ -612,7 +616,7 @@ public class CurrentTimeRulerView extends View {
         //mClipEndTime<=0表示裁剪还没有结束
         if (mClipStartTime > 0 && mClipEndTime <= 0) {
             // 裁剪开始指针
-            mPaint.setColor(Color.parseColor("#e28a8a"));
+            mPaint.setColor(clipIndicatorColor);
             mPaint.setStrokeWidth(indicatorWidth);
             final float secondGap = mUnitGap / (float)mUnitSecond ;
             //只绘制区间内的裁剪时间段
@@ -621,6 +625,7 @@ public class CurrentTimeRulerView extends View {
             float endX = mHalfWidth - mMoveDistance + (mCurrentTime - mInitialTime) * secondGap;
             canvas.drawLine(startX, 0, startX, mHeight - partHeight, mPaint);
 
+            mPaint.setColor(clipColor);
             mPaint.setStrokeWidth(partHeight);
             float partY = mHeight - partHeight;
             canvas.drawLine(startX, partY, endX, partY, mPaint);
