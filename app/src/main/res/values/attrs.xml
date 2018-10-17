@@ -14,6 +14,8 @@
         <attr name="clipColor" format="color|reference" />
         <!--裁剪时间指针颜色-->
         <attr name="clipIndicatorColor" format="color|reference" />
+        <!--裁剪指针线宽度-->
+        <attr name="clipIndicatorWidth" format="reference|dimension" />
         <!--时间块与时刻度的距离-->
         <attr name="partGradationGap" format="dimension|reference" />
         <!--刻度颜色-->
