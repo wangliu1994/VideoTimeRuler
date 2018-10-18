@@ -47,7 +47,7 @@ public class CurrentTimeRulerLayout extends LinearLayout {
         mTrvTimeRuler.setOnTimeChangedListener(new CurrentTimeRulerView.OnTimeChangeListener() {
             @Override
             public void onTimeChanged(long newTime) {
-                mTvTimeRuler.setText(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(newTime));
+                mTvTimeRuler.setText(TimeUtil.formatTimeHHmmss(newTime));
                 if(mOnTimeChangeListener != null){
                     mOnTimeChangeListener.onTimeChanged(newTime);
                 }

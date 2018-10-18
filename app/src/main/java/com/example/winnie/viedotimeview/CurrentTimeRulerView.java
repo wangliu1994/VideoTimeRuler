@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.support.annotation.Nullable;
 import android.text.TextPaint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.VelocityTracker;
@@ -16,7 +17,6 @@ import android.view.ViewConfiguration;
 import android.widget.Scroller;
 
 import java.lang.reflect.Field;
-import java.text.SimpleDateFormat;
 import java.util.List;
 
 import io.reactivex.Observable;
@@ -42,10 +42,9 @@ import io.reactivex.schedulers.Schedulers;
 public class CurrentTimeRulerView extends View {
     private final static String TAG = CurrentTimeRulerView.class.getSimpleName();
     /**
-     * 绘制时间为当前时间的前后一天
+     * 绘制时间为当前时间的前后300格
      */
-    private final long MIN_TIME_VALUE = -24 * 60 * 60;
-    private final long MAX_TIME_VALUE = 24 * 60 * 60;
+    private final long MAX_RULE_COUNT = 300;
 
     /**
      * 背景色
@@ -483,10 +482,10 @@ public class CurrentTimeRulerView extends View {
                 mVelocityTracker.computeCurrentVelocity(1000, MAX_VELOCITY);
                 final int xVelocity = (int) mVelocityTracker.getXVelocity();
                 if (Math.abs(xVelocity) >= MIN_VELOCITY) {
-                    // 惯性滑动,阈值是向左向右24小时
-                    final int maxDistance = (int) (MAX_TIME_VALUE / (float) mUnitSecond * mUnitGap);
-                    final int minDistance = (int) (MIN_TIME_VALUE / (float) mUnitSecond * mUnitGap);
-                    mScroller.fling((int) mMoveDistance, 0, -xVelocity, 0, minDistance, maxDistance, 0, 0);
+                    // 惯性滑动,阈值是向左向右300个刻度
+                    final int maxDistance = (int) (mMoveDistance + (mUnitSecond * MAX_RULE_COUNT / (float) mUnitSecond * mUnitGap));
+                    final int minDistance = (int) (mMoveDistance + (mUnitSecond * -MAX_RULE_COUNT / (float) mUnitSecond * mUnitGap));
+                    mScroller.fling((int) mMoveDistance, 0, -xVelocity, 0,  minDistance, maxDistance, 0, 0);
                     invalidate();
                 }
                 break;
@@ -505,16 +504,12 @@ public class CurrentTimeRulerView extends View {
     }
 
     private void computeTime() {
-        // 转float，不肯定能整除
-        float maxDistance = (mMaxTime - mInitialTime) / (float) mUnitSecond * mUnitGap;
-        float minDistance = (mMinTime - mInitialTime) / (float) mUnitSecond * mUnitGap;
-        // 限定范围
-        mMoveDistance = Math.min(maxDistance, Math.max(minDistance, mMoveDistance));
         mCurrentTime = mInitialTime + (int) (mMoveDistance / mUnitGap * mUnitSecond);
-        mMinTime = mCurrentTime + MIN_TIME_VALUE;
-        mMaxTime = mCurrentTime + MAX_TIME_VALUE;
+        mMinTime = mCurrentTime + mUnitSecond * -MAX_RULE_COUNT;
+        mMaxTime = mCurrentTime + mUnitSecond * MAX_RULE_COUNT;
+
         if (mOnTimeChangeListener != null) {
-            mOnTimeChangeListener.onTimeChanged(mCurrentTime * 1000);
+            mOnTimeChangeListener.onTimeChanged(mCurrentTime);
         }
         invalidate();
     }
@@ -565,11 +560,12 @@ public class CurrentTimeRulerView extends View {
         long dxTime = mCurrentTime % perTextCount;
         long centerTime = mCurrentTime - mInitialTime - dxTime;
 
-        //绘制centerTime左右两边24小时的尺子刻度
-        long start = centerTime + MIN_TIME_VALUE;
+        //绘制centerTime左右两边300个尺子刻度
+        long start = centerTime + mUnitSecond * -MAX_RULE_COUNT;
         float startX = mHalfWidth - mMoveDistance + start * secondGap;
 
-        while (start <= centerTime + MAX_TIME_VALUE) {
+        int i= 0;
+        while (start <= centerTime + mUnitSecond * MAX_RULE_COUNT) {
             long timeTemp = start + mInitialTime;
             // 刻度
             if (timeTemp % 3600 == 0) {
@@ -585,14 +581,15 @@ public class CurrentTimeRulerView extends View {
 
             // 时间数值
             if (timeTemp % perTextCount == 0) {
-                String text = new SimpleDateFormat("HH:mm:ss").format(timeTemp * 1000);
+                String text = TimeUtil.formatTimeHHmm(timeTemp);
                 canvas.drawText(text, startX - mTextHalfWidth, -hourLen - gradationTextGap - gradationTextSize, mTextPaint);
             }
 
             start += mUnitSecond;
             startX += mUnitGap;
+            i++;
         }
-
+        Log.d(TAG, "COUNT" + i);
         canvas.restore();
     }
 
@@ -693,11 +690,11 @@ public class CurrentTimeRulerView extends View {
         //取currentTime最近的整点时间
         long time = currentTime / 1000;
         this.mCurrentTime = time;
-        this.mMaxTime = time + MAX_TIME_VALUE;
-        this.mMinTime = time + MIN_TIME_VALUE;
+        this.mMaxTime = time + mUnitSecond * MAX_RULE_COUNT;
+        this.mMinTime = time + mUnitSecond * -MAX_RULE_COUNT;
         this.mInitialTime = time;
         if (mOnTimeChangeListener != null) {
-            mOnTimeChangeListener.onTimeChanged(mInitialTime * 1000);
+            mOnTimeChangeListener.onTimeChanged(mInitialTime);
         }
         calculateDistance();
         postInvalidate();
@@ -707,7 +704,7 @@ public class CurrentTimeRulerView extends View {
     /**
      * 获取当前时间
      *
-     * @return 当前时间毫秒数
+     * @return 当前时间秒数
      */
     public long getCurrentTime() {
         return mCurrentTime * 1000;
@@ -737,11 +734,11 @@ public class CurrentTimeRulerView extends View {
     }
 
     public long getClipStartTime() {
-        return mClipStartTime * 1000;
+        return mClipStartTime;
     }
 
     public long getClipEndTime() {
-        return mClipEndTime * 1000;
+        return mClipEndTime;
     }
 
     private void startRun() {
@@ -764,7 +761,7 @@ public class CurrentTimeRulerView extends View {
                         mCurrentTime = mCurrentTime + aLong;
                         calculateDistance();
                         if (mOnTimeChangeListener != null) {
-                            mOnTimeChangeListener.onTimeChanged(mCurrentTime * 1000);
+                            mOnTimeChangeListener.onTimeChanged(mCurrentTime);
                         }
                         postInvalidate();
                     }

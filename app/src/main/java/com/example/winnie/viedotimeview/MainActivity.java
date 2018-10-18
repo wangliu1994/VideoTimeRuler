@@ -49,8 +49,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 currentTimeRulerLayout.getTimeRuler().stopClip();
-                String sData1 = "开始时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(currentTimeRulerLayout.getTimeRuler().getClipStartTime());
-                String sData2 = " 结束时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(currentTimeRulerLayout.getTimeRuler().getClipEndTime());
+                String sData1 = "开始时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(currentTimeRulerLayout.getTimeRuler().getClipStartTime() * 1000);
+                String sData2 = " 结束时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(currentTimeRulerLayout.getTimeRuler().getClipEndTime() * 1000);
                 clipTimeView.setText(sData1 + sData2);
             }
         });
