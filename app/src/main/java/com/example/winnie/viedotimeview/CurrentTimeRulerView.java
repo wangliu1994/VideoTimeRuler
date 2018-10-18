@@ -234,11 +234,11 @@ public class CurrentTimeRulerView extends View {
         }
 
         /**
-         * @param currentTime     基准时间 单位：毫秒
-         * @param startTimeOffset 基准时间差值  单位：毫秒
+         * @param currentTime     基准时间 单位：秒
+         * @param startTimeOffset 基准时间差值  单位：秒
          */
         public void setStartTime(long currentTime, long startTimeOffset) {
-            this.startTime = currentTime / 1000 + startTimeOffset / 1000;
+            this.startTime = currentTime + startTimeOffset;
         }
 
         public long getEndTime() {
@@ -249,7 +249,7 @@ public class CurrentTimeRulerView extends View {
          * @param endTimeOffset 与开始时间的差值 单位：毫秒
          */
         public void setEndTime(long endTimeOffset) {
-            this.endTime = startTime + endTimeOffset / 1000;
+            this.endTime = startTime + endTimeOffset;
         }
     }
 
@@ -688,7 +688,7 @@ public class CurrentTimeRulerView extends View {
      */
     public void setCurrentTime(long currentTime) {
         //取currentTime最近的整点时间
-        long time = currentTime / 1000;
+        long time = currentTime;
         this.mCurrentTime = time;
         this.mMaxTime = time + mUnitSecond * MAX_RULE_COUNT;
         this.mMinTime = time + mUnitSecond * -MAX_RULE_COUNT;
@@ -707,7 +707,7 @@ public class CurrentTimeRulerView extends View {
      * @return 当前时间秒数
      */
     public long getCurrentTime() {
-        return mCurrentTime * 1000;
+        return mCurrentTime;
     }
 
     /**
