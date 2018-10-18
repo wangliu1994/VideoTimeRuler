@@ -35,12 +35,12 @@ public class CurrentTimeRulerLayout extends LinearLayout {
         mTrvTimeRuler = findViewById(R.id.trv_time_ruler);
         mTvTimeRuler = findViewById(R.id.tv_time_ruler);
 
-        long current = System.currentTimeMillis();
+        long current = System.currentTimeMillis() / 1000;
         List<CurrentTimeRulerView.TimePart> list = new ArrayList<>();
         for (int i = -10; i < 10; i++) {
             CurrentTimeRulerView.TimePart part = new CurrentTimeRulerView.TimePart();
-            part.setStartTime(current,i * 1000 * 1000);
-            part.setEndTime(new Random().nextInt(1000 *1000));
+            part.setStartTime(current,i * 1000);
+            part.setEndTime(new Random().nextInt(1000));
             list.add(part);
         }
         mTrvTimeRuler.setTimePartList(list);
