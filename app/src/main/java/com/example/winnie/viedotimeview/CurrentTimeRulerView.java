@@ -17,6 +17,7 @@ import android.view.ViewConfiguration;
 import android.widget.Scroller;
 
 import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 import io.reactivex.Observable;
@@ -564,7 +565,7 @@ public class CurrentTimeRulerView extends View {
         long start = centerTime + mUnitSecond * -MAX_RULE_COUNT;
         float startX = mHalfWidth - mMoveDistance + start * secondGap;
 
-        int i= 0;
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         while (start <= centerTime + mUnitSecond * MAX_RULE_COUNT) {
             long timeTemp = start + mInitialTime;
             // 刻度
@@ -582,14 +583,13 @@ public class CurrentTimeRulerView extends View {
             // 时间数值
             if (timeTemp % perTextCount == 0) {
                 String text = TimeUtil.formatTimeHHmm(timeTemp);
+                //String text = format.format(timeTemp * 1000);
                 canvas.drawText(text, startX - mTextHalfWidth, -hourLen - gradationTextGap - gradationTextSize, mTextPaint);
             }
 
             start += mUnitSecond;
             startX += mUnitGap;
-            i++;
         }
-        Log.d(TAG, "COUNT" + i);
         canvas.restore();
     }
 
