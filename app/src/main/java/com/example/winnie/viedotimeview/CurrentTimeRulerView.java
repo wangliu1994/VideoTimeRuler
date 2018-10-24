@@ -109,6 +109,13 @@ public class CurrentTimeRulerView extends View {
     private float indicatorWidth;
 
     /**
+     * 当前时间文字颜色,字体大小，与上方边距
+     */
+    private int currTimeTextColor;
+    private float currTimeTextGap;
+    private float currTimeTextSize;
+
+    /**
      * 最小单位对应的单位秒数值，一共四级: 10s、1min、5min、15min
      * 与 {@link #mPerTextCounts} 和 {@link #mPerCountScaleThresholds} 对应的索引值
      */
@@ -166,6 +173,11 @@ public class CurrentTimeRulerView extends View {
      */
     private final float mTextHalfWidth;
 
+    /**
+     * 当前数值文字宽度的一半：时间格式为“00:00:00”，所以长度固定
+     */
+    private final float mCurrTextHalfWidth;
+
     private final int SCROLL_SLOP;
     private final int MIN_VELOCITY;
     private final int MAX_VELOCITY;
@@ -197,7 +209,8 @@ public class CurrentTimeRulerView extends View {
     private float mMoveDistance;
 
     private Paint mPaint;
-    private TextPaint mTextPaint;
+    private TextPaint mRuleTextPaint;
+    private TextPaint mCurrTextPaint;
     private Scroller mScroller;
     private VelocityTracker mVelocityTracker;
 
@@ -278,7 +291,8 @@ public class CurrentTimeRulerView extends View {
         init(context);
         initScaleGesture(context);
 
-        mTextHalfWidth = mTextPaint.measureText("00:00") * 0.5f;
+        mTextHalfWidth = mRuleTextPaint.measureText("00:00") * 0.5f;
+        mCurrTextHalfWidth = mCurrTextPaint.measureText("00:00:00") * 0.5f;
         ViewConfiguration viewConfiguration = ViewConfiguration.get(context);
         SCROLL_SLOP = viewConfiguration.getScaledTouchSlop();
         MIN_VELOCITY = viewConfiguration.getScaledMinimumFlingVelocity();
@@ -307,6 +321,9 @@ public class CurrentTimeRulerView extends View {
         gradationTextGap = ta.getDimension(R.styleable.TimeRulerView_gradationTextGap, PxUtil.dp2px(context, 4));
         indicatorWidth = ta.getDimension(R.styleable.TimeRulerView_indicatorLineWidth, PxUtil.dp2px(context, 1));
         indicatorColor = ta.getColor(R.styleable.TimeRulerView_indicatorLineColor, Color.parseColor("#FAD500"));
+        currTimeTextColor = ta.getColor(R.styleable.TimeRulerView_currTimeTextColor, Color.parseColor("#999999"));
+        currTimeTextGap = ta.getDimension(R.styleable.TimeRulerView_currTimeTextGap, PxUtil.dp2px(context, 6));
+        currTimeTextSize = ta.getDimension(R.styleable.TimeRulerView_currTimeTextSize, PxUtil.dp2px(context, 10));
         ta.recycle();
     }
 
@@ -380,9 +397,12 @@ public class CurrentTimeRulerView extends View {
     private void init(Context context) {
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        mTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        mTextPaint.setTextSize(gradationTextSize);
-        mTextPaint.setColor(gradationTextColor);
+        mRuleTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        mRuleTextPaint.setTextSize(gradationTextSize);
+        mRuleTextPaint.setColor(gradationTextColor);
+        mCurrTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        mCurrTextPaint.setTextSize(currTimeTextSize);
+        mCurrTextPaint.setColor(currTimeTextColor);
 
         mScroller = new Scroller(context);
     }
@@ -420,7 +440,7 @@ public class CurrentTimeRulerView extends View {
 
         // 处理wrap_content的高度，设置为60dp
         if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.AT_MOST) {
-            mHeight = PxUtil.dp2px(getContext(), 60);
+            mHeight = PxUtil.dp2px(getContext(), 80);
         }
 
         mHalfHeight = mHeight >> 1;
@@ -520,7 +540,7 @@ public class CurrentTimeRulerView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         // 背景
-        canvas.drawColor(bgColor);
+        drawBg(canvas);
 
         // 刻度
         drawRule(canvas);
@@ -547,13 +567,24 @@ public class CurrentTimeRulerView extends View {
         }
     }
 
+    private void drawBg(Canvas canvas){
+        canvas.save();
+        float dY = currTimeTextGap*2 + currTimeTextSize + partHeight/2;
+        canvas.translate(0, -dY);
+        mPaint.setStyle(Paint.Style.FILL);
+        mPaint.setColor(bgColor);
+        canvas.drawRect(0, 0, mWidth, mHeight, mPaint);
+        canvas.restore();
+    }
+
     /**
      * 绘制刻度
      */
     private void drawRule(Canvas canvas) {
         // 移动画布坐标系
         canvas.save();
-        canvas.translate(0, mHeight - partHeight - partGradationGap);
+        float dY = currTimeTextGap*2 + currTimeTextSize + partHeight + partGradationGap;
+        canvas.translate(0, mHeight - dY);
         mPaint.setColor(gradationColor);
         mPaint.setStrokeWidth(gradationWidth);
 
@@ -588,7 +619,8 @@ public class CurrentTimeRulerView extends View {
             if (timeTemp % perTextCount == 0) {
                 String text = TimeUtil.formatTimeHHmm(timeTemp);
                 //String text = format.format(timeTemp * 1000);
-                canvas.drawText(text, startX - mTextHalfWidth, -hourLen - gradationTextGap - gradationTextSize, mTextPaint);
+                canvas.drawText(text, startX - mTextHalfWidth,
+                        -hourLen - gradationTextGap - gradationTextSize, mRuleTextPaint);
             }
 
             start += mUnitSecond;
@@ -601,15 +633,21 @@ public class CurrentTimeRulerView extends View {
      * 绘制当前时间指针
      */
     private void drawTimeIndicator(Canvas canvas) {
+        float dY = currTimeTextGap*2 + currTimeTextSize + partHeight;
+        float partY = mHeight - dY;
         // 指针
         mPaint.setColor(indicatorColor);
         mPaint.setStrokeWidth(indicatorWidth);
-        canvas.drawLine(mHalfWidth, 0, mHalfWidth, mHeight - partHeight / 2, mPaint);
+        canvas.drawLine(mHalfWidth, 0, mHalfWidth, partY + partHeight / 2, mPaint);
 
         //实心圆
         mPaint.setStyle(Paint.Style.FILL);
         mPaint.setColor(partColor);
-        canvas.drawCircle(mHalfWidth, mHeight - partHeight, partHeight, mPaint);
+        canvas.drawCircle(mHalfWidth, partY, partHeight, mPaint);
+
+        String text = TimeUtil.formatTimeHHmmss(mCurrentTime);
+        canvas.drawText(text, mHalfWidth - mCurrTextHalfWidth,
+                mHeight - currTimeTextGap, mCurrTextPaint);
     }
 
     /**
@@ -629,11 +667,12 @@ public class CurrentTimeRulerView extends View {
             long startTime = Math.min(Math.max(mClipStartTime, mMinTime), mMaxTime);
             float startX = mHalfWidth - mMoveDistance + (startTime - mInitialTime) * secondGap;
             float endX = mHalfWidth - mMoveDistance + (mCurrentTime - mInitialTime) * secondGap;
-            canvas.drawLine(startX, 0, startX, mHeight - partHeight / 2, mPaint);
+            float dY = currTimeTextGap*2 + currTimeTextSize + partHeight;
+            float partY = mHeight - dY;
+            canvas.drawLine(startX, 0, startX, partY + partHeight / 2, mPaint);
 
             mPaint.setColor(clipColor);
             mPaint.setStrokeWidth(partHeight);
-            float partY = mHeight - partHeight;
             canvas.drawLine(startX, partY, endX, partY, mPaint);
         }
     }
@@ -648,7 +687,8 @@ public class CurrentTimeRulerView extends View {
         // 不用矩形，直接使用直线绘制
         mPaint.setStrokeWidth(partHeight);
         mPaint.setColor(partBgColor);
-        float partY = mHeight - partHeight;
+        float dY = currTimeTextGap*2 + currTimeTextSize + partHeight;
+        float partY = mHeight - dY;
         canvas.drawLine(0, partY, mWidth, partY, mPaint);
 
         mPaint.setColor(partColor);

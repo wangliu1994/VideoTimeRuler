@@ -26,7 +26,7 @@ import io.reactivex.schedulers.Schedulers;
  */
 public class CurrentTimeRulerLayout extends LinearLayout {
     CurrentTimeRulerView mTrvTimeRuler;
-    TextView mTvTimeRuler;
+//    TextView mTvTimeRuler;
 
     public CurrentTimeRulerLayout(Context context) {
         this(context, null);
@@ -40,7 +40,7 @@ public class CurrentTimeRulerLayout extends LinearLayout {
     private void initView(Context context) {
         LayoutInflater.from(context).inflate(R.layout.layout_current_time_ruler, this);
         mTrvTimeRuler = findViewById(R.id.trv_time_ruler);
-        mTvTimeRuler = findViewById(R.id.tv_time_ruler);
+//        mTvTimeRuler = findViewById(R.id.tv_time_ruler);
 
         long current = System.currentTimeMillis() / 1000;
         List<CurrentTimeRulerView.TimePart> list = new ArrayList<>();
@@ -54,7 +54,6 @@ public class CurrentTimeRulerLayout extends LinearLayout {
         mTrvTimeRuler.setOnTimeChangedListener(new CurrentTimeRulerView.OnTimeChangeListener() {
             @Override
             public void onTimeChanged(long newTime) {
-                mTvTimeRuler.setText(TimeUtil.formatTimeHHmmss(newTime));
                 if(mOnTimeChangeListener != null){
                     mOnTimeChangeListener.onTimeChanged(newTime);
                 }

@@ -40,6 +40,12 @@
         <attr name="indicatorLineColor" format="reference|color" />
         <!--中间指针线宽度-->
         <attr name="indicatorLineWidth" format="reference|dimension" />
+        <!--当前时间与刻度尺的距离-->
+        <attr name="currTimeTextGap" format="dimension|reference" />
+        <!--当前时间文字颜色-->
+        <attr name="currTimeTextColor" format="color|reference" />
+        <!--当前时间文字大小-->
+        <attr name="currTimeTextSize" format="dimension|reference" />
 
     </declare-styleable>
 
