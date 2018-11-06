@@ -1,4 +1,4 @@
-package com.example.winnie.viedotimeview;
+package com.winnie.widget.videotimeruler;
 
 /**
  * @author : winnie

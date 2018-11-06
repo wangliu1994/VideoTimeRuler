@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <com.example.winnie.viedotimeview.CurrentTimeRulerView
+    <com.winnie.widget.videotimeruler.CurrentTimeRulerView
         android:id="@+id/trv_time_ruler"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />

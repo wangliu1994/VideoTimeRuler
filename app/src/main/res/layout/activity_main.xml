@@ -7,12 +7,12 @@
     android:orientation="vertical"
     android:showDividers="middle|end|beginning|none">
 
-    <com.example.winnie.viedotimeview.TimeRulerLayout
+    <com.winnie.widget.videotimeruler.TimeRulerLayout
         android:id="@+id/time_ruler_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
-    <com.example.winnie.viedotimeview.CurrentTimeRulerLayout
+    <com.winnie.widget.videotimeruler.CurrentTimeRulerLayout
         android:id="@+id/current_time_ruler_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />

@@ -1,11 +1,12 @@
-package com.example.winnie.viedotimeview;
+package com.winnie.widget.videotimeruler;
 
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.widget.LinearLayout;
-import android.widget.TextView;
+
+import com.example.winnie.viedotimeview.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,44 +14,45 @@ import java.util.Random;
 
 /**
  * @author : winnie
- * @date : 2018/10/9
+ * @date : 2018/10/10
  * @desc
  */
-public class TimeRulerLayout extends LinearLayout {
-    TimeRulerView mTrvTimeRuler;
-    TextView mTvTimeRuler;
+public class CurrentTimeRulerLayout extends LinearLayout {
+    CurrentTimeRulerView mTrvTimeRuler;
+//    TextView mTvTimeRuler;
 
-    public TimeRulerLayout(Context context) {
+    public CurrentTimeRulerLayout(Context context) {
         this(context, null);
     }
 
-    public TimeRulerLayout(Context context, AttributeSet attrs) {
+    public CurrentTimeRulerLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
         initView(context);
     }
 
     private void initView(Context context) {
-        LayoutInflater.from(context).inflate(R.layout.layout_time_ruler, this);
+        LayoutInflater.from(context).inflate(R.layout.layout_current_time_ruler, this);
         mTrvTimeRuler = findViewById(R.id.trv_time_ruler);
-        mTvTimeRuler = findViewById(R.id.tv_time_ruler);
+//        mTvTimeRuler = findViewById(R.id.tv_time_ruler);
 
-        List<TimeRulerView.TimePart> list = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            TimeRulerView.TimePart part = new TimeRulerView.TimePart();
-            part.startTime = i * 1000;
-            part.endTime = part.startTime + new Random().nextInt(1000);
+        long current = System.currentTimeMillis() / 1000;
+        List<CurrentTimeRulerView.TimePart> list = new ArrayList<>();
+        for (int i = -10; i < 10; i++) {
+            CurrentTimeRulerView.TimePart part = new CurrentTimeRulerView.TimePart();
+            part.setStartTime(current,i * 1000);
+            part.setEndTime(new Random().nextInt(1000));
             list.add(part);
         }
         mTrvTimeRuler.setTimePartList(list);
-        mTrvTimeRuler.setOnTimeChangedListener(new TimeRulerView.OnTimeChangeListener() {
+        mTrvTimeRuler.setOnTimeChangedListener(new CurrentTimeRulerView.OnTimeChangeListener() {
             @Override
             public void onTimeChanged(long newTime) {
-                mTvTimeRuler.setText(TimeUtil.formatTimeHHmmss(newTime));
                 if(mOnTimeChangeListener != null){
                     mOnTimeChangeListener.onTimeChanged(newTime);
                 }
             }
         });
+        mTrvTimeRuler.setCurrentTime(current);
     }
 
     @Override
@@ -68,6 +70,11 @@ public class TimeRulerLayout extends LinearLayout {
         return super.onTouchEvent(event);
     }
 
+
+    public CurrentTimeRulerView getTimeRuler() {
+        return mTrvTimeRuler;
+    }
+
     private OnTimeChangeListener mOnTimeChangeListener;
     /**
      * 设置时间变化监听事件
@@ -80,7 +87,7 @@ public class TimeRulerLayout extends LinearLayout {
     public interface OnTimeChangeListener{
         /**
          * 时间发生变化
-         * @param newTime
+         * @param newTime 单位，毫秒
          */
         void onTimeChanged(long newTime);
     }

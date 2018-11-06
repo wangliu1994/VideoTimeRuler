@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <com.example.winnie.viedotimeview.TimeRulerView
+    <com.winnie.widget.videotimeruler.TimeRulerView
         android:id="@+id/trv_time_ruler"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
