@@ -7,7 +7,7 @@ import android.view.MotionEvent;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.example.winnie.viedotimeview.R;
+import com.winnie.widget.R;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -5,7 +5,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
 
-import com.example.winnie.viedotimeview.R;
+import com.winnie.widget.R;
 
 import java.text.SimpleDateFormat;
 

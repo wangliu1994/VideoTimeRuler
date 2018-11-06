@@ -16,7 +16,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.Scroller;
 
-import com.example.winnie.viedotimeview.R;
+import com.winnie.widget.R;
 
 import java.lang.reflect.Field;
 import java.util.List;

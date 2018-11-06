@@ -2,7 +2,7 @@ package com.winnie.widget.videotimeruler;
 
 import android.util.Log;
 
-import com.example.winnie.viedotimeview.BuildConfig;
+import com.winnie.widget.BuildConfig;
 
 /**
  * @author : winnie
