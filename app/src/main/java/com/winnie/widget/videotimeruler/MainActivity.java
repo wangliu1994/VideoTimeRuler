@@ -14,6 +14,7 @@ import java.text.SimpleDateFormat;
  */
 public class MainActivity extends AppCompatActivity {
 
+    RunTimeRulerLayout mRunTimeRulerView;
     TimeRulerLayout rulerLayout;
     CurrentTimeRulerLayout currentTimeRulerLayout;
     TextView clipTimeView;
@@ -23,6 +24,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mRunTimeRulerView = findViewById(R.id.run_time_ruler);
+
         rulerLayout = findViewById(R.id.time_ruler_layout);
         rulerLayout.setOnTimeChangedListener(new TimeRulerLayout.OnTimeChangeListener() {
             @Override
@@ -30,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+        rulerLayout.mTrvTimeRuler.startRun();
 
         currentTimeRulerLayout = findViewById(R.id.current_time_ruler_layout);
         currentTimeRulerLayout.setOnTimeChangedListener(new CurrentTimeRulerLayout.OnTimeChangeListener() {

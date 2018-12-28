@@ -7,6 +7,11 @@
     android:orientation="vertical"
     android:showDividers="middle|end|beginning|none">
 
+    <com.winnie.widget.videotimeruler.RunTimeRulerLayout
+        android:id="@+id/run_time_ruler"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <com.winnie.widget.videotimeruler.TimeRulerLayout
         android:id="@+id/time_ruler_layout"
         android:layout_width="match_parent"
