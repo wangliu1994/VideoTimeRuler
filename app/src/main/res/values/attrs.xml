@@ -46,6 +46,8 @@
         <attr name="currTimeTextColor" format="color|reference" />
         <!--当前时间文字大小-->
         <attr name="currTimeTextSize" format="dimension|reference" />
+        <!--是否只绘制一天的时间-->
+        <attr name="isDrawOneDay" format="boolean" />
 
     </declare-styleable>
 

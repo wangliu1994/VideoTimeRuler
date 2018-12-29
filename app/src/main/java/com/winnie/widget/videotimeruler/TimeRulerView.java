@@ -40,7 +40,7 @@ import io.reactivex.schedulers.Schedulers;
  *
  * @author : winnie
  * @date : 2018/10/9
- * @desc
+ * @desc 绘制0-24点的时间尺，拿到的时间是从时间戳0开始的时间值
  */
 public class TimeRulerView extends View {
     private final static String TAG = TimeRulerView.class.getSimpleName();

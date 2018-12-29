@@ -39,7 +39,8 @@ public class RunTimeRulerLayout extends LinearLayout {
         mTrvTimeRuler = findViewById(R.id.trv_time_ruler);
         mTvTimeRuler = findViewById(R.id.tv_time_ruler);
 
-        long current = System.currentTimeMillis() / 1000 % (24 * 3600);
+//        long current = System.currentTimeMillis() / 1000 % (24 * 3600);
+        long current = System.currentTimeMillis() / 1000;
         List<RunTimeRulerView.TimePart> list = new ArrayList<>();
         for (int i = -10; i < 10; i++) {
             RunTimeRulerView.TimePart part = new RunTimeRulerView.TimePart();
@@ -60,6 +61,7 @@ public class RunTimeRulerLayout extends LinearLayout {
         });
 
         mTrvTimeRuler.setCurrentTime(current);
+        mTrvTimeRuler.setDrawOneDay(true);
     }
 
     @Override

@@ -39,7 +39,7 @@ import io.reactivex.schedulers.Schedulers;
  *
  * @author : winnie
  * @date : 2018/10/9
- * @desc 当前时间轴尺子
+ * @desc 当前时间轴尺子 以当前时间为基准，滑动时无限绘制
  */
 public class CurrentTimeRulerView extends View {
     private final static String TAG = CurrentTimeRulerView.class.getSimpleName();

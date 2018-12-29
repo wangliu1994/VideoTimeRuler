@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        rulerLayout.mTrvTimeRuler.startRun();
+//        rulerLayout.mTrvTimeRuler.startRun();
 
         currentTimeRulerLayout = findViewById(R.id.current_time_ruler_layout);
         currentTimeRulerLayout.setOnTimeChangedListener(new CurrentTimeRulerLayout.OnTimeChangeListener() {
@@ -47,16 +47,16 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.start).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                currentTimeRulerLayout.getTimeRuler().startClip();
+                mRunTimeRulerView.getTimeRuler().startClip();
             }
         });
 
         findViewById(R.id.stop).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                currentTimeRulerLayout.getTimeRuler().stopClip();
-                String sData1 = "开始时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(currentTimeRulerLayout.getTimeRuler().getClipStartTime() * 1000);
-                String sData2 = " 结束时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(currentTimeRulerLayout.getTimeRuler().getClipEndTime() * 1000);
+                mRunTimeRulerView.getTimeRuler().stopClip();
+                String sData1 = "开始时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(mRunTimeRulerView.getTimeRuler().getClipStartTime() * 1000);
+                String sData2 = " 结束时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(mRunTimeRulerView.getTimeRuler().getClipEndTime() * 1000);
                 clipTimeView.setText(sData1 + sData2);
             }
         });

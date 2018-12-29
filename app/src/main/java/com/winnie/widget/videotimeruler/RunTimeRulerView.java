@@ -40,15 +40,10 @@ import io.reactivex.schedulers.Schedulers;
  *
  * @author : winnie
  * @date : 2018/10/9
- * @desc 当前时间轴尺子
+ * @desc 当前时间轴尺子 通过isDrawOneDay来确定是无限绘制还是绘制一天时间
  */
 public class RunTimeRulerView extends View {
     private final static String TAG = CurrentTimeRulerView.class.getSimpleName();
-    /**
-     * 绘制时间为当前时间的前后格数
-     */
-    private int mMaxRuleCount = 60;
-
     /**
      * 背景色
      */
@@ -117,6 +112,10 @@ public class RunTimeRulerView extends View {
     private int currTimeTextColor;
     private float currTimeTextGap;
     private float currTimeTextSize;
+    /**
+     * 是否只绘制一天的时间
+     */
+    private boolean isDrawOneDay;
 
     /**
      * 最小单位对应的单位秒数值，一共四级: 10s、1min、5min、15min
@@ -172,6 +171,12 @@ public class RunTimeRulerView extends View {
     private int mUnitSecond = mUnitSeconds[mPerTextCountIndex];
 
     /**
+     * 绘制时间为当前时间的前后格数
+     */
+    private int mMaxRuleCount = 60;
+    private int mMaxTimeValue = mMaxRuleCount * mUnitSecond;
+
+    /**
      * 数值文字宽度的一半：时间格式为“00:00”，所以长度固定
      */
     private final float mTextHalfWidth;
@@ -199,6 +204,10 @@ public class RunTimeRulerView extends View {
      */
     private long mClipEndTime;
 
+    /**
+     * 初始化时的基准时间，作为时间原点,取的是mCurrentTime对应的那天的0点
+     */
+    private long mInitialTime;
     /**
      * 距离当前时间移动的值
      */
@@ -320,6 +329,7 @@ public class RunTimeRulerView extends View {
         currTimeTextColor = ta.getColor(R.styleable.TimeRulerView_currTimeTextColor, Color.parseColor("#999999"));
         currTimeTextGap = ta.getDimension(R.styleable.TimeRulerView_currTimeTextGap, PxUtil.dp2px(context, 6));
         currTimeTextSize = ta.getDimension(R.styleable.TimeRulerView_currTimeTextSize, PxUtil.dp2px(context, 10));
+        isDrawOneDay = ta.getBoolean(R.styleable.TimeRulerView_isDrawOneDay, false);
         ta.recycle();
     }
 
@@ -352,10 +362,11 @@ public class RunTimeRulerView extends View {
                 mUnitSecond = mUnitSeconds[mPerTextCountIndex];
                 mUnitGap = mScale * mOneSecondGap * mUnitSecond;
                 mMaxRuleCount = (int) (mWidth / mUnitGap + 2);
+                mMaxTimeValue = mMaxRuleCount * mUnitSecond;
                 LogUtil.logD(TAG, "onScale: mScale=%f, mPerTextCountIndex=%d, mUnitSecond=%d, mUnitGap=%f",
                         mScale, mPerTextCountIndex, mUnitSecond, mUnitGap);
 
-                mMoveDistance = mCurrentTime / (float) mUnitSecond * mUnitGap;
+                mMoveDistance = (mCurrentTime - mInitialTime) / (float) mUnitSecond * mUnitGap;
                 invalidate();
                 return true;
             }
@@ -388,7 +399,7 @@ public class RunTimeRulerView extends View {
 
     private void calculateDistance() {
         //不加 (float)则会一个时针一个时针的跳动
-        mMoveDistance = mCurrentTime / (float) mUnitSecond * mUnitGap;
+        mMoveDistance = (mCurrentTime - mInitialTime) / (float) mUnitSecond * mUnitGap;
     }
 
     private void init(Context context) {
@@ -443,6 +454,7 @@ public class RunTimeRulerView extends View {
         mHalfHeight = mHeight >> 1;
         mHalfWidth = mWidth >> 1;
         mMaxRuleCount = (int) (mWidth / mUnitGap + 2);
+        mMaxTimeValue = mMaxRuleCount * mUnitSecond;
 
         setMeasuredDimension(mWidth, mHeight);
         Log.i(TAG, "onMeasure");
@@ -503,8 +515,11 @@ public class RunTimeRulerView extends View {
                 final int xVelocity = (int) mVelocityTracker.getXVelocity();
                 if (Math.abs(xVelocity) >= MIN_VELOCITY) {
                     // 惯性滑动,阈值是向左向右300个刻度
-                    final int maxDistance = (int) (mMoveDistance + (mUnitSecond * mMaxRuleCount / (float) mUnitSecond * mUnitGap));
-                    final int minDistance = (int) (mMoveDistance + (mUnitSecond * -mMaxRuleCount / (float) mUnitSecond * mUnitGap));
+                    int maxDistance = (int) (mMoveDistance + (TimeUtil.MAX_TIME_VALUE / (float) mUnitSecond * mUnitGap));
+                    int minDistance = (int) (mMoveDistance + (-TimeUtil.MAX_TIME_VALUE / (float) mUnitSecond * mUnitGap));
+                    if (isDrawOneDay) {
+                        minDistance = 0;
+                    }
                     mScroller.fling((int) mMoveDistance, 0, -xVelocity, 0, minDistance, maxDistance, 0, 0);
                     invalidate();
                 }
@@ -524,11 +539,13 @@ public class RunTimeRulerView extends View {
     }
 
     private void computeTime() {
-        // 不用转float，肯定能整除
-        float maxDistance = TimeUtil.MAX_TIME_VALUE / mUnitSecond * mUnitGap;
-        // 限定范围
-        mMoveDistance = Math.min(maxDistance, Math.max(0, mMoveDistance));
-        mCurrentTime = (int) (mMoveDistance / mUnitGap * mUnitSecond);
+        if (isDrawOneDay) {
+            // 不用转float，肯定能整除
+            float maxDistance = TimeUtil.MAX_TIME_VALUE / mUnitSecond * mUnitGap;
+            // 限定范围
+            mMoveDistance = Math.min(maxDistance, Math.max(0, mMoveDistance));
+        }
+        mCurrentTime = mInitialTime + (int) (mMoveDistance / mUnitGap * mUnitSecond);
 
         if (mOnTimeChangeListener != null) {
             mOnTimeChangeListener.onTimeChanged(mCurrentTime);
@@ -576,57 +593,6 @@ public class RunTimeRulerView extends View {
         canvas.restore();
     }
 
-//    /**
-//     * 绘制刻度
-//     */
-//    private void drawRule(Canvas canvas) {
-//        // 移动画布坐标系
-//        canvas.save();
-//        float dY = currTimeTextGap * 2 + currTimeTextSize + partHeight + partGradationGap;
-//        canvas.translate(0, mHeight - dY);
-//        mPaint.setColor(gradationColor);
-//        mPaint.setStrokeWidth(gradationWidth);
-//
-//        final float secondGap = mUnitGap / (float) mUnitSecond;
-//        final int perTextCount = mPerTextCounts[mPerTextCountIndex];
-//
-//        //mCurrentTime与其最邻近的左边刻度尺的时间差值
-//        long dxTime = mCurrentTime % perTextCount;
-//        long centerTime = mCurrentTime - dxTime;
-//
-//        //绘制centerTime左右两边MAX_RULE_COUNT个尺子刻度
-//        long start = centerTime + mUnitSecond * -mMaxRuleCount;
-//        if(start < 0){
-//            start = 0;
-//        }
-//        float startX = mHalfWidth - mMoveDistance + start * secondGap;
-//
-//        while (start <= centerTime + mUnitSecond * mMaxRuleCount && start < TimeUtil.MAX_TIME_VALUE) {
-//            // 刻度
-//            if (start % 3600 == 0) {
-//                // 时刻度
-//                canvas.drawLine(startX, 0, startX, -hourLen, mPaint);
-//            } else if (start % 60 == 0) {
-//                // 分刻度
-//                canvas.drawLine(startX, 0, startX, -minuteLen, mPaint);
-//            } else {
-//                // 秒刻度
-//                canvas.drawLine(startX, 0, startX, -secondLen, mPaint);
-//            }
-//
-//            // 时间数值
-//            if (start % perTextCount == 0) {
-//                String text = TimeUtil.formatTimeHHmm(start);
-//                canvas.drawText(text, startX - mTextHalfWidth,
-//                        -hourLen - gradationTextGap - gradationTextSize, mRuleTextPaint);
-//            }
-//
-//            start += mUnitSecond;
-//            startX += mUnitGap;
-//        }
-//        canvas.restore();
-//    }
-
     private void drawRule(Canvas canvas) {
         // 移动画布坐标系
         canvas.save();
@@ -635,18 +601,32 @@ public class RunTimeRulerView extends View {
         mPaint.setColor(gradationColor);
         mPaint.setStrokeWidth(gradationWidth);
 
+        //绘制尺子刻度, 从min到max
+        final float secondGap = mUnitGap / (float) mUnitSecond;
         final int perTextCount = mPerTextCounts[mPerTextCountIndex];
 
-        //绘制centerTime左右两边MAX_RULE_COUNT个尺子刻度
-        long start = 0;
-        float startX = mHalfWidth - mMoveDistance;
+        //mCurrentTime与其最邻近的左边刻度尺的时间差值
+        long dxTime = mCurrentTime % perTextCount;
+        long centerTime = mCurrentTime - dxTime - mInitialTime;
 
-        while (start < TimeUtil.MAX_TIME_VALUE) {
+        //绘制centerTime左右两边MAX_RULE_COUNT个尺子刻度
+        long start = centerTime - mMaxTimeValue;
+        if (start < 0 && isDrawOneDay) {
+            start = 0;
+        }
+        float startX = mHalfWidth - mMoveDistance + start * secondGap;
+
+        int count = 0;
+        boolean drawTag = !isDrawOneDay && start < centerTime + mMaxTimeValue;
+        boolean drawOneDayTag = isDrawOneDay &&
+                start < TimeUtil.MAX_TIME_VALUE && start < centerTime + mMaxTimeValue;
+        while (drawTag || drawOneDayTag) {
+            long timeTemp = start + mInitialTime;
             // 刻度
-            if (start % 3600 == 0) {
+            if (timeTemp % 3600 == 0) {
                 // 时刻度
                 canvas.drawLine(startX, 0, startX, -hourLen, mPaint);
-            } else if (start % 60 == 0) {
+            } else if (timeTemp % 60 == 0) {
                 // 分刻度
                 canvas.drawLine(startX, 0, startX, -minuteLen, mPaint);
             } else {
@@ -655,16 +635,21 @@ public class RunTimeRulerView extends View {
             }
 
             // 时间数值
-            if (start % perTextCount == 0) {
-                String text = TimeUtil.formatTimeHHmm(start);
+            if (timeTemp % perTextCount == 0) {
+                String text = TimeUtil.formatTimeHHmm(timeTemp);
                 canvas.drawText(text, startX - mTextHalfWidth,
                         -hourLen - gradationTextGap - gradationTextSize, mRuleTextPaint);
             }
 
             start += mUnitSecond;
             startX += mUnitGap;
+            count++;
+            drawTag = !isDrawOneDay && start < centerTime + mMaxTimeValue;
+            drawOneDayTag = isDrawOneDay &&
+                    start < TimeUtil.MAX_TIME_VALUE && start < centerTime + mMaxTimeValue;
         }
         canvas.restore();
+        Log.e("TAG", count + "");
     }
 
     /**
@@ -702,9 +687,9 @@ public class RunTimeRulerView extends View {
             mPaint.setStrokeWidth(clipIndicatorWidth);
             final float secondGap = mUnitGap / (float) mUnitSecond;
             //只绘制区间内的裁剪时间段
-            long startTime = Math.min(Math.max(mClipStartTime, -TimeUtil.MAX_TIME_VALUE), TimeUtil.MAX_TIME_VALUE);
-            float startX = mHalfWidth - mMoveDistance + (startTime - mCurrentTime) * secondGap;
-            float endX = mHalfWidth - mMoveDistance * secondGap;
+            long startTime = Math.min(Math.max(mClipStartTime, mCurrentTime - mMaxTimeValue), mCurrentTime + mMaxTimeValue);
+            float startX = mHalfWidth - mMoveDistance + (startTime - mInitialTime) * secondGap;
+            float endX = mHalfWidth - mMoveDistance + (mCurrentTime - mInitialTime) * secondGap;
             float dY = currTimeTextGap * 2 + currTimeTextSize + partHeight;
             float partY = mHeight - dY;
             canvas.drawLine(startX, 0, startX, partY + partHeight / 2, mPaint);
@@ -735,10 +720,10 @@ public class RunTimeRulerView extends View {
         for (int i = 0, size = mTimePartList.size(); i < size; i++) {
             TimePart timePart = mTimePartList.get(i);
             //只绘制区间内的时间段
-            long startTime = Math.min(Math.max(timePart.getStartTime(), -TimeUtil.MAX_TIME_VALUE), TimeUtil.MAX_TIME_VALUE);
-            long endTime = Math.min(Math.max(timePart.getEndTime(), -TimeUtil.MAX_TIME_VALUE), TimeUtil.MAX_TIME_VALUE);
-            startX = mHalfWidth - mMoveDistance + (startTime - mCurrentTime) * secondGap;
-            endX = mHalfWidth - mMoveDistance + (endTime - mCurrentTime) * secondGap;
+            long startTime = Math.min(Math.max(timePart.getStartTime(), mCurrentTime - mMaxTimeValue), mCurrentTime + mMaxTimeValue);
+            long endTime = Math.min(Math.max(timePart.getEndTime(), mCurrentTime - mMaxTimeValue), mCurrentTime + mMaxTimeValue);
+            startX = mHalfWidth - mMoveDistance + (startTime - mInitialTime) * secondGap;
+            endX = mHalfWidth - mMoveDistance + (endTime - mInitialTime) * secondGap;
             canvas.drawLine(startX, partY, endX, partY, mPaint);
         }
     }
@@ -770,8 +755,8 @@ public class RunTimeRulerView extends View {
      */
     public void setCurrentTime(long currentTime) {
         //取currentTime最近的整点时间
-        long time = currentTime;
-        this.mCurrentTime = time;
+        this.mCurrentTime = currentTime;
+        this.mInitialTime = currentTime - currentTime % (24 * 3600) - 8 * 3600;
         if (mOnTimeChangeListener != null) {
             mOnTimeChangeListener.onTimeChanged(mCurrentTime);
         }
@@ -787,6 +772,11 @@ public class RunTimeRulerView extends View {
      */
     public long getCurrentTime() {
         return mCurrentTime;
+    }
+
+    public void setDrawOneDay(boolean drawOneDay) {
+        isDrawOneDay = drawOneDay;
+        postInvalidate();
     }
 
     /**
@@ -829,7 +819,7 @@ public class RunTimeRulerView extends View {
                     if (isMoving || isScaling) {
                         continue;
                     }
-                    if (mCurrentTime > TimeUtil.MAX_TIME_VALUE) {
+                    if (isDrawOneDay && mCurrentTime > mInitialTime + TimeUtil.MAX_TIME_VALUE) {
                         continue;
                     }
                     Thread.sleep(1000);
@@ -841,7 +831,7 @@ public class RunTimeRulerView extends View {
                 .subscribe(new Consumer<Long>() {
                     @Override
                     public void accept(Long aLong) throws Exception {
-                        if (mCurrentTime >= TimeUtil.MAX_TIME_VALUE) {
+                        if (isDrawOneDay && mCurrentTime > mInitialTime + TimeUtil.MAX_TIME_VALUE) {
                             return;
                         }
                         mCurrentTime = mCurrentTime + aLong;
