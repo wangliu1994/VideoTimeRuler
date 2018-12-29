@@ -61,7 +61,7 @@ public class RunTimeRulerLayout extends LinearLayout {
         });
 
         mTrvTimeRuler.setCurrentTime(current);
-        mTrvTimeRuler.setDrawOneDay(true);
+        mTrvTimeRuler.setDrawOneDay(false);
     }
 
     @Override

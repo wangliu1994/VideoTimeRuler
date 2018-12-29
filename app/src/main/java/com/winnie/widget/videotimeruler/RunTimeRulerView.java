@@ -518,7 +518,6 @@ public class RunTimeRulerView extends View {
                 mVelocityTracker.computeCurrentVelocity(1000, MAX_VELOCITY);
                 final int xVelocity = (int) mVelocityTracker.getXVelocity();
                 if (Math.abs(xVelocity) >= MIN_VELOCITY) {
-                    // 惯性滑动,阈值是向左向右300个刻度
                     int maxDistance = (int) (mMoveDistance + (TimeUtil.MAX_TIME_VALUE / (float) mUnitSecond * mUnitGap));
                     int minDistance = (int) (mMoveDistance + (-TimeUtil.MAX_TIME_VALUE / (float) mUnitSecond * mUnitGap));
                     if (isDrawOneDay) {
