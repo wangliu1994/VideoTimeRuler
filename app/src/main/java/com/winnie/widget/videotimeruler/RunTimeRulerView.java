@@ -42,6 +42,7 @@ import io.reactivex.schedulers.Schedulers;
  * @date : 2018/10/9
  * @desc 当前时间轴尺子 通过isDrawOneDay来确定是无限绘制还是绘制一天时间
  */
+@SuppressWarnings("unused")
 public class RunTimeRulerView extends View {
     private final static String TAG = CurrentTimeRulerView.class.getSimpleName();
     /**
@@ -55,7 +56,7 @@ public class RunTimeRulerView extends View {
     /**
      * 时间块的高度
      */
-    private float partHeight;
+    private float partWidth;
     /**
      * 时间块的颜色
      */
@@ -224,7 +225,9 @@ public class RunTimeRulerView extends View {
      */
     private ScaleGestureDetector mScaleGestureDetector;
 
-    private int mWidth, mHeight, mHalfWidth, mHalfHeight;
+    private int mWidth;
+    private int mHeight;
+    private int mHalfWidth;
     private int mInitialX;
     private int mLastX, mLastY;
     private boolean isMoving;
@@ -310,7 +313,7 @@ public class RunTimeRulerView extends View {
         TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.TimeRulerView);
         bgColor = ta.getColor(R.styleable.TimeRulerView_bgColor, Color.parseColor("#F4F4F4"));
         gradationColor = ta.getColor(R.styleable.TimeRulerView_gradationColor, Color.parseColor("#333333"));
-        partHeight = ta.getDimension(R.styleable.TimeRulerView_partHeight, PxUtil.dp2px(context, 5));
+        partWidth = ta.getDimension(R.styleable.TimeRulerView_partHeight, PxUtil.dp2px(context, 5));
         partColor = ta.getColor(R.styleable.TimeRulerView_partColor, Color.parseColor("#605FBC"));
         partBgColor = ta.getColor(R.styleable.TimeRulerView_partBgColor, Color.parseColor("#C4C4C4"));
         clipColor = ta.getColor(R.styleable.TimeRulerView_clipColor, Color.parseColor("#E28A8A"));
@@ -451,7 +454,7 @@ public class RunTimeRulerView extends View {
             mHeight = PxUtil.dp2px(getContext(), 80);
         }
 
-        mHalfHeight = mHeight >> 1;
+        int halfHeight = mHeight >> 1;
         mHalfWidth = mWidth >> 1;
         mMaxRuleCount = (int) (mWidth / mUnitGap + 2);
         mMaxTimeValue = mMaxRuleCount * mUnitSecond;
@@ -460,6 +463,7 @@ public class RunTimeRulerView extends View {
         Log.i(TAG, "onMeasure");
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         final int actionIndex = event.getActionIndex();
@@ -585,7 +589,7 @@ public class RunTimeRulerView extends View {
 
     private void drawBg(Canvas canvas) {
         canvas.save();
-        float dY = currTimeTextGap * 2 + currTimeTextSize + partHeight / 2;
+        float dY = currTimeTextGap * 2 + currTimeTextSize + partWidth / 2;
         canvas.translate(0, -dY);
         mPaint.setStyle(Paint.Style.FILL);
         mPaint.setColor(bgColor);
@@ -596,7 +600,7 @@ public class RunTimeRulerView extends View {
     private void drawRule(Canvas canvas) {
         // 移动画布坐标系
         canvas.save();
-        float dY = currTimeTextGap * 2 + currTimeTextSize + partHeight + partGradationGap;
+        float dY = currTimeTextGap * 2 + currTimeTextSize + partWidth + partGradationGap;
         canvas.translate(0, mHeight - dY);
         mPaint.setColor(gradationColor);
         mPaint.setStrokeWidth(gradationWidth);
@@ -656,17 +660,17 @@ public class RunTimeRulerView extends View {
      * 绘制当前时间指针
      */
     private void drawTimeIndicator(Canvas canvas) {
-        float dY = currTimeTextGap * 2 + currTimeTextSize + partHeight;
+        float dY = currTimeTextGap * 2 + currTimeTextSize + partWidth;
         float partY = mHeight - dY;
         // 指针
         mPaint.setColor(indicatorColor);
         mPaint.setStrokeWidth(indicatorWidth);
-        canvas.drawLine(mHalfWidth, 0, mHalfWidth, partY + partHeight / 2, mPaint);
+        canvas.drawLine(mHalfWidth, 0, mHalfWidth, partY + partWidth / 2, mPaint);
 
         //实心圆
         mPaint.setStyle(Paint.Style.FILL);
         mPaint.setColor(partColor);
-        canvas.drawCircle(mHalfWidth, partY, partHeight, mPaint);
+        canvas.drawCircle(mHalfWidth, partY, partWidth, mPaint);
 
         String text = TimeUtil.formatTimeHHmmss(mCurrentTime);
         canvas.drawText(text, mHalfWidth - mCurrTextHalfWidth,
@@ -675,8 +679,6 @@ public class RunTimeRulerView extends View {
 
     /**
      * 绘制裁剪时间轴部分
-     *
-     * @param canvas
      */
     public void drawClipPart(Canvas canvas) {
         //mClipStartTime>0表示开始裁剪了
@@ -690,12 +692,12 @@ public class RunTimeRulerView extends View {
             long startTime = Math.min(Math.max(mClipStartTime, mCurrentTime - mMaxTimeValue), mCurrentTime + mMaxTimeValue);
             float startX = mHalfWidth - mMoveDistance + (startTime - mInitialTime) * secondGap;
             float endX = mHalfWidth - mMoveDistance + (mCurrentTime - mInitialTime) * secondGap;
-            float dY = currTimeTextGap * 2 + currTimeTextSize + partHeight;
+            float dY = currTimeTextGap * 2 + currTimeTextSize + partWidth;
             float partY = mHeight - dY;
-            canvas.drawLine(startX, 0, startX, partY + partHeight / 2, mPaint);
+            canvas.drawLine(startX, 0, startX, partY + partWidth / 2, mPaint);
 
             mPaint.setColor(clipColor);
-            mPaint.setStrokeWidth(partHeight);
+            mPaint.setStrokeWidth(partWidth);
             canvas.drawLine(startX, partY, endX, partY, mPaint);
         }
     }
@@ -708,9 +710,9 @@ public class RunTimeRulerView extends View {
             return;
         }
         // 不用矩形，直接使用直线绘制
-        mPaint.setStrokeWidth(partHeight);
+        mPaint.setStrokeWidth(partWidth);
         mPaint.setColor(partBgColor);
-        float dY = currTimeTextGap * 2 + currTimeTextSize + partHeight;
+        float dY = currTimeTextGap * 2 + currTimeTextSize + partWidth;
         float partY = mHeight - dY;
         canvas.drawLine(0, partY, mWidth, partY, mPaint);
 
@@ -754,7 +756,6 @@ public class RunTimeRulerView extends View {
      * @param currentTime 当前时间
      */
     public void setCurrentTime(long currentTime) {
-        //取currentTime最近的整点时间
         this.mCurrentTime = currentTime;
         this.mInitialTime = currentTime - currentTime % (24 * 3600) - 8 * 3600;
         if (mOnTimeChangeListener != null) {
