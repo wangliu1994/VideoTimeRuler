@@ -756,7 +756,7 @@ public class RunTimeRulerView extends View {
      */
     public void setCurrentTime(long currentTime) {
         this.mCurrentTime = currentTime;
-        this.mInitialTime = currentTime - currentTime % (24 * 3600) - 8 * 3600;
+        this.mInitialTime = currentTime - (currentTime- 8 * 3600) % TimeUtil.MAX_TIME_VALUE;
         if (mOnTimeChangeListener != null) {
             mOnTimeChangeListener.onTimeChanged(mCurrentTime);
         }
