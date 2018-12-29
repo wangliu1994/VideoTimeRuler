@@ -237,7 +237,7 @@ public class TimeRulerView extends View {
         TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.TimeRulerView);
         bgColor = ta.getColor(R.styleable.TimeRulerView_bgColor, Color.parseColor("#F4F4F4"));
         gradationColor = ta.getColor(R.styleable.TimeRulerView_gradationColor, Color.parseColor("#333333"));
-        partHeight = ta.getDimension(R.styleable.TimeRulerView_partHeight, PxUtil.dp2px(context,5));
+        partHeight = ta.getDimension(R.styleable.TimeRulerView_partWidth, PxUtil.dp2px(context,5));
         partColor = ta.getColor(R.styleable.TimeRulerView_partColor, Color.parseColor("#605FBC"));
         partBgColor = ta.getColor(R.styleable.TimeRulerView_partBgColor, Color.parseColor("#C4C4C4"));
         partGradationGap = ta.getDimension(R.styleable.TimeRulerView_partGradationGap, PxUtil.dp2px(getContext(), 5));

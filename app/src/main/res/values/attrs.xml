@@ -5,7 +5,7 @@
         <!--背景色-->
         <attr name="bgColor" format="reference|color" />
         <!--时间块的高度-->
-        <attr name="partHeight" format="dimension|reference" />
+        <attr name="partWidth" format="dimension|reference" />
         <!--时间块的颜色-->
         <attr name="partColor" format="color|reference" />
         <!--时间块的背景色-->
